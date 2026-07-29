@@ -1,0 +1,334 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
+import {
+  Star,
+  Heart,
+  ShoppingCart,
+  Truck,
+  Shield,
+  Minus,
+  Plus,
+  ChevronRight,
+  Share2,
+} from "lucide-react";
+import { useCartStore } from "@/store/cart";
+import { useWishlistStore } from "@/store/wishlist";
+import { ProductDetail, ReviewData } from "@/types";
+import Button from "@/components/ui/Button";
+
+interface ProductDetailClientProps {
+  product: ProductDetail;
+}
+
+export default function ProductDetailClient({ product }: ProductDetailClientProps) {
+  const { data: session } = useSession();
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+  const addToCart = useCartStore((s) => s.addItem);
+  const { toggleItem, isInWishlist } = useWishlistStore();
+  const inWishlist = isInWishlist(product.id);
+
+  const discount = product.originalPriceMZN
+    ? Math.round(
+        ((product.originalPriceMZN - product.priceMZN) / product.originalPriceMZN) * 100
+      )
+    : 0;
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("pt-MZ", { style: "decimal", minimumFractionDigits: 0 }).format(price);
+
+  const handleAddToCart = () => {
+    addToCart({
+      id: `cart-${product.id}-${selectedVariant || "default"}-${Date.now()}`,
+      productId: product.id,
+      title: product.title,
+      image: product.images[0]?.url || "",
+      priceMZN: product.priceMZN,
+      originalPriceMZN: product.originalPriceMZN,
+      quantity,
+      variant: selectedVariant || undefined,
+      stock: product.stock,
+    });
+    toast.success("Adicionado ao carrinho!");
+  };
+
+  const handleWishlist = () => {
+    toggleItem({
+      id: `wish-${product.id}`,
+      productId: product.id,
+      title: product.title,
+      image: product.images[0]?.url || "",
+      priceMZN: product.priceMZN,
+      originalPriceMZN: product.originalPriceMZN,
+      rating: product.rating,
+    });
+    toast.success(inWishlist ? "Removido da lista de desejos" : "Adicionado à lista de desejos");
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <Link href="/" className="hover:text-yellow-600">Início</Link>
+        <ChevronRight size={14} />
+        {product.category && (
+          <>
+            <Link href={`/category/${product.category.slug}`} className="hover:text-yellow-600">
+              {product.category.name}
+            </Link>
+            <ChevronRight size={14} />
+          </>
+        )}
+        <span className="text-gray-900 truncate">{product.title}</span>
+      </nav>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Images */}
+        <div>
+          <div className="relative aspect-square rounded-2xl overflow-hidden bg-white border mb-4">
+            {product.images[selectedImage] && (
+              <Image
+                src={product.images[selectedImage].url}
+                alt={product.title}
+                fill
+                className="object-contain p-4"
+                priority
+              />
+            )}
+            {discount > 0 && (
+              <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                -{discount}%
+              </div>
+            )}
+          </div>
+          
+          {/* Thumbnail strip */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {product.images.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={() => setSelectedImage(idx)}
+                className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  idx === selectedImage ? "border-yellow-500" : "border-gray-200"
+                }`}
+              >
+                <Image
+                  src={img.url}
+                  alt={`${product.title} ${idx + 1}`}
+                  width={64}
+                  height={64}
+                  className="object-cover w-full h-full"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Product Info */}
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
+            {product.title}
+          </h1>
+
+          {/* Rating */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  size={16}
+                  className={
+                    star <= Math.round(product.rating)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-gray-300"
+                  }
+                />
+              ))}
+              <span className="text-sm text-gray-600 ml-1">
+                {product.rating.toFixed(1)}
+              </span>
+            </div>
+            <span className="text-sm text-gray-500">
+              {product.reviewCount} avaliações
+            </span>
+            <span className="text-sm text-gray-500">
+              {product.sold} vendidos
+            </span>
+          </div>
+
+          {/* Price */}
+          <div className="bg-orange-50 p-4 rounded-xl mb-6">
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-bold text-red-600">
+                {formatPrice(product.priceMZN)} MT
+              </span>
+              {product.originalPriceMZN && (
+                <span className="text-lg text-gray-400 line-through">
+                  {formatPrice(product.originalPriceMZN)} MT
+                </span>
+              )}
+              {discount > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                  -{discount}%
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Variants */}
+          {product.variants.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Opções disponíveis
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((variant) => (
+                  <button
+                    key={variant.id}
+                    onClick={() => setSelectedVariant(variant.value)}
+                    className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
+                      selectedVariant === variant.value
+                        ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    {variant.value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quantity */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Quantidade</h3>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-10 h-10 rounded-lg border flex items-center justify-center hover:bg-gray-50"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="w-12 text-center font-semibold">{quantity}</span>
+              <button
+                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                className="w-10 h-10 rounded-lg border flex items-center justify-center hover:bg-gray-50"
+              >
+                <Plus size={16} />
+              </button>
+              <span className="text-sm text-gray-500">
+                {product.stock} disponíveis
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 mb-6">
+            <Button onClick={handleAddToCart} size="lg" fullWidth>
+              <ShoppingCart size={18} className="mr-2" />
+              Adicionar ao Carrinho
+            </Button>
+            <button
+              onClick={handleWishlist}
+              className={`p-3 rounded-lg border-2 transition-colors ${
+                inWishlist
+                  ? "border-red-500 text-red-500 bg-red-50"
+                  : "border-gray-300 text-gray-500 hover:border-red-300"
+              }`}
+            >
+              <Heart size={22} className={inWishlist ? "fill-current" : ""} />
+            </button>
+            <button className="p-3 rounded-lg border-2 border-gray-300 text-gray-500 hover:border-gray-400 transition-colors">
+              <Share2 size={22} />
+            </button>
+          </div>
+
+          {/* Shipping info */}
+          <div className="space-y-3 p-4 bg-white rounded-xl border">
+            <div className="flex items-center gap-3">
+              <Truck size={18} className="text-green-500" />
+              <div>
+                <p className="text-sm font-medium">
+                  {product.freeShipping ? "Frete Grátis" : "Envio para Mocambique"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Entrega estimada: {product.shippingDays || "15-45 dias"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Shield size={18} className="text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">Proteção ao Comprador</p>
+                <p className="text-xs text-gray-500">
+                  Reembolso total se não receber o produto
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      {product.description && (
+        <div className="mt-12 bg-white rounded-2xl p-6 border">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Descrição do Produto</h2>
+          <div
+            className="prose prose-sm max-w-none text-gray-700"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
+        </div>
+      )}
+
+      {/* Reviews */}
+      <div className="mt-8 bg-white rounded-2xl p-6 border">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">
+          Avaliações ({product.reviewCount})
+        </h2>
+        {product.reviews.length > 0 ? (
+          <div className="space-y-4">
+            {product.reviews.map((review) => (
+              <div key={review.id} className="border-b pb-4 last:border-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={14}
+                        className={
+                          star <= review.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium">{review.user.name || "Anónimo"}</span>
+                  {review.verified && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                      Verificado
+                    </span>
+                  )}
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-gray-600">{review.comment}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(review.createdAt).toLocaleDateString("pt-MZ")}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">Ainda não há avaliações para este produto.</p>
+        )}
+      </div>
+    </div>
+  );
+}
