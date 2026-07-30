@@ -4,10 +4,17 @@ import ProductDetailClient from "./ProductDetailClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
+  let product = await prisma.product.findUnique({
     where: { slug },
     select: { title: true, description: true, priceMZN: true },
   }).catch(() => null);
+
+  if (!product && slug.startsWith("ali-")) {
+    product = await prisma.product.findUnique({
+      where: { aliexpressId: slug.replace("ali-", "") },
+      select: { title: true, description: true, priceMZN: true },
+    }).catch(() => null);
+  }
 
   if (!product) return { title: "Produto não encontrado" };
 
@@ -20,7 +27,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const product = await prisma.product.findUnique({
+  // Try to find by slug first, then by aliexpressId (for live search results)
+  let product = await prisma.product.findUnique({
     where: { slug },
     include: {
       images: { orderBy: { order: "asc" } },
@@ -33,6 +41,24 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       },
     },
   }).catch(() => null);
+
+  // If not found by slug, try aliexpressId (for products from live search)
+  if (!product && slug.startsWith("ali-")) {
+    const aliId = slug.replace("ali-", "");
+    product = await prisma.product.findUnique({
+      where: { aliexpressId: aliId },
+      include: {
+        images: { orderBy: { order: "asc" } },
+        variants: true,
+        category: { select: { id: true, name: true, slug: true } },
+        reviews: {
+          include: { user: { select: { name: true, image: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+    }).catch(() => null);
+  }
 
   if (!product) notFound();
 
