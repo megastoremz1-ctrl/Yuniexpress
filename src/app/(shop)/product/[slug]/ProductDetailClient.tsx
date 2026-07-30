@@ -176,27 +176,41 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             </div>
           </div>
 
-          {/* Variants */}
+          {/* Variants with prices */}
           {product.variants.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                Opções disponíveis
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    onClick={() => setSelectedVariant(variant.value)}
-                    className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
-                      selectedVariant === variant.value
-                        ? "border-yellow-500 bg-yellow-50 text-yellow-700"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    {variant.value}
-                  </button>
-                ))}
-              </div>
+              {/* Group variants by name */}
+              {Object.entries(
+                product.variants.reduce((groups: Record<string, typeof product.variants>, v) => {
+                  if (!groups[v.name]) groups[v.name] = [];
+                  groups[v.name].push(v);
+                  return groups;
+                }, {})
+              ).map(([name, variants]) => (
+                <div key={name} className="mb-3">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">{name}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map((variant) => (
+                      <button
+                        key={variant.id}
+                        onClick={() => setSelectedVariant(variant.value)}
+                        className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
+                          selectedVariant === variant.value
+                            ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                            : "border-gray-300 hover:border-gray-400"
+                        }`}
+                      >
+                        <span>{variant.value}</span>
+                        {variant.priceMZN && variant.priceMZN !== product.priceMZN && (
+                          <span className="ml-1 text-xs font-bold text-red-600">
+                            {new Intl.NumberFormat("pt-MZ").format(variant.priceMZN)} MT
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

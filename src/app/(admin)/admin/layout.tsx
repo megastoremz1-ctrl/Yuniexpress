@@ -40,7 +40,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (!session?.user || !["ADMIN", "SUPER_ADMIN"].includes((session.user as any).role)) {
-    redirect("/login");
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-100">
+        <div className="bg-white p-8 rounded-2xl border text-center max-w-sm">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X size={24} className="text-red-500" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Acesso Restrito</h1>
+          <p className="text-sm text-gray-500 mb-4">
+            Esta área é apenas para administradores.
+          </p>
+          <a href="/account" className="text-yellow-600 hover:underline text-sm font-medium">
+            ← Voltar à minha conta
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (
