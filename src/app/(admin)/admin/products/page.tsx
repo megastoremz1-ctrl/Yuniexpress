@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+
 import toast from "react-hot-toast";
 import { Check, X, Eye, Edit2, Search, RefreshCw } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -206,11 +206,10 @@ export default function AdminProductsPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden relative shrink-0">
                       {product.images[0] && (
-                        <Image
+                        <img
                           src={product.images[0].url}
                           alt={product.title}
-                          fill
-                          className="object-cover"
+                          className="w-full h-full object-cover"
                         />
                       )}
                     </div>

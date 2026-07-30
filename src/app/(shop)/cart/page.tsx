@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+
 import Link from "next/link";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart";
@@ -49,11 +49,10 @@ export default function CartPage() {
             >
               <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                 {item.image && (
-                  <Image
+                  <img
                     src={item.image}
                     alt={item.title}
-                    fill
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                   />
                 )}
               </div>

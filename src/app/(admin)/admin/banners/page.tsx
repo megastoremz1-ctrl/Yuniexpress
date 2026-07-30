@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+
 import toast from "react-hot-toast";
 import { Plus, Trash2, Edit2, Image as ImageIcon } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -128,11 +128,10 @@ export default function AdminBannersPage() {
         {banners.map((banner) => (
           <div key={banner.id} className="bg-white rounded-xl border overflow-hidden">
             <div className="relative h-40 bg-gray-100">
-              <Image
+              <img
                 src={banner.image}
                 alt={banner.title || "Banner"}
-                fill
-                className="object-cover"
+                className="w-full h-full object-cover"
               />
               {!banner.active && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">

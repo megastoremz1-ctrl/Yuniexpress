@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
@@ -93,12 +92,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         <div>
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-white border mb-4">
             {product.images[selectedImage] && (
-              <Image
+              <img
                 src={product.images[selectedImage].url}
                 alt={product.title}
-                fill
-                className="object-contain p-4"
-                priority
+                className="w-full h-full object-contain p-4"
               />
             )}
             {discount > 0 && (
@@ -118,12 +115,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                   idx === selectedImage ? "border-yellow-500" : "border-gray-200"
                 }`}
               >
-                <Image
+                <img
                   src={img.url}
                   alt={`${product.title} ${idx + 1}`}
-                  width={64}
-                  height={64}
-                  className="object-cover w-full h-full"
+                  className="w-full h-full object-cover"
                 />
               </button>
             ))}

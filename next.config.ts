@@ -5,23 +5,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "ae01.alicdn.com",
+        hostname: "**.aliexpress-media.com",
       },
       {
         protocol: "https",
-        hostname: "ae04.alicdn.com",
+        hostname: "**.alicdn.com",
       },
       {
         protocol: "https",
-        hostname: "*.aliexpress.com",
-      },
-      {
-        protocol: "https",
-        hostname: "s.alicdn.com",
-      },
-      {
-        protocol: "https",
-        hostname: "img.alicdn.com",
+        hostname: "**.aliexpress.com",
       },
       {
         protocol: "https",

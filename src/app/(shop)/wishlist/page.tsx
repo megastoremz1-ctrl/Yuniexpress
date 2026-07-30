@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+
 import { Heart, ShoppingCart, Star, Trash2 } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlist";
 import { useCartStore } from "@/store/cart";
@@ -55,7 +55,7 @@ export default function WishlistPage() {
           <div key={item.id} className="bg-white rounded-xl border overflow-hidden group">
             <div className="relative aspect-square bg-gray-100">
               {item.image && (
-                <Image src={item.image} alt={item.title} fill className="object-cover" />
+                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
               )}
               <button
                 onClick={() => removeItem(item.productId)}

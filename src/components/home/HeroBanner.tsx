@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BannerData } from "@/types";
@@ -47,21 +46,17 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
         >
           {banner.link ? (
             <Link href={banner.link} className="block w-full h-full">
-              <Image
+              <img
                 src={banner.image}
                 alt={banner.title || "Banner"}
-                fill
-                className="object-cover"
-                priority={index === 0}
+                className="w-full h-full object-cover"
               />
             </Link>
           ) : (
-            <Image
+            <img
               src={banner.image}
               alt={banner.title || "Banner"}
-              fill
-              className="object-cover"
-              priority={index === 0}
+              className="w-full h-full object-cover"
             />
           )}
           {(banner.title || banner.subtitle) && (

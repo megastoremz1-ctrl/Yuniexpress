@@ -1,10 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Truck } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlist";
-import { useCartStore } from "@/store/cart";
 import { ProductCard as ProductCardType } from "@/types";
 
 interface ProductCardProps {
@@ -29,16 +27,15 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <div className="relative group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       {/* Image */}
       <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-gray-100">
         {product.images[0] && (
-          <Image
+          <img
             src={product.images[0].url}
             alt={product.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
           />
         )}
         {discount > 0 && (
@@ -56,7 +53,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* Wishlist button */}
       <button
-        onClick={() =>
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           toggleItem({
             id: `wish-${product.id}`,
             productId: product.id,
@@ -65,9 +64,9 @@ export default function ProductCard({ product }: ProductCardProps) {
             priceMZN: product.priceMZN,
             originalPriceMZN: product.originalPriceMZN,
             rating: product.rating,
-          })
-        }
-        className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm hover:bg-white transition-colors"
+          });
+        }}
+        className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm hover:bg-white transition-colors z-10"
       >
         <Heart
           size={16}

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+
 import { Package, ChevronRight, Truck, Clock } from "lucide-react";
 
 interface Order {
@@ -111,7 +111,7 @@ export default function OrdersPage() {
                     <div key={item.id} className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden relative shrink-0">
                         {item.image && (
-                          <Image src={item.image} alt={item.title} fill className="object-cover" />
+                          <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

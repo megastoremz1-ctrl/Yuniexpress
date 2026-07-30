@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
@@ -85,24 +86,67 @@ export default function HomePageClient({
       />
 
       {/* Newsletter / Promo section */}
-      <div className="my-12 bg-yellow-50 rounded-2xl p-8 text-center">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Receba ofertas exclusivas
-        </h3>
-        <p className="text-gray-600 mb-6">
-          Subscreva para receber notificações de promoções e novos produtos
-        </p>
-        <div className="flex max-w-md mx-auto gap-2">
-          <input
-            type="email"
-            placeholder="O seu email..."
-            className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-yellow-500"
-          />
-          <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-            Subscrever
-          </button>
-        </div>
-      </div>
+      <NewsletterSection />
+    </div>
+  );
+}
+
+function NewsletterSection() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setMessage(data.message || data.error);
+      if (res.ok) setEmail("");
+    } catch {
+      setMessage("Erro ao processar. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="my-12 bg-yellow-50 rounded-2xl p-8 text-center">
+      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+        Receba ofertas exclusivas
+      </h3>
+      <p className="text-gray-600 mb-6">
+        Subscreva para receber notificações de promoções e novos produtos
+      </p>
+      <form onSubmit={handleSubmit} className="flex max-w-md mx-auto gap-2">
+        <input
+          type="email"
+          placeholder="O seu email..."
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+        >
+          {loading ? "..." : "Subscrever"}
+        </button>
+      </form>
+      {message && (
+        <p className="mt-3 text-sm text-green-700 font-medium">{message}</p>
+      )}
     </div>
   );
 }
