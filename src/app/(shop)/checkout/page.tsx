@@ -11,12 +11,12 @@ import Input from "@/components/ui/Input";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { items, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
   const [address, setAddress] = useState({
-    name: session?.user?.name || "",
+    name: "",
     phone: "",
     province: "",
     city: "",
@@ -28,7 +28,16 @@ export default function CheckoutPage() {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("pt-MZ", { style: "decimal", minimumFractionDigits: 0 }).format(price);
 
-  if (!session) {
+  // Wait for session to load before checking auth
+  if (status === "loading") {
+    return (
+      <div className="container mx-auto px-4 py-16 flex justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-yellow-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
     router.push("/login");
     return null;
   }
