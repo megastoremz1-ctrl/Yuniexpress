@@ -1,73 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { validateWebhookSignature } from "@/lib/services/paygo";
+import { validateWebhookSignature, parseWebhookEvent } from "@/lib/services/paysuite";
 import { sendOrderNotification } from "@/lib/services/onesignal";
 
+/**
+ * PaySuite Webhook Handler
+ *
+ * Receives payment.success and payment.failed events
+ * Validates signature via X-Webhook-Signature header (HMAC-SHA256)
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = request.headers.get("x-paygo-signature") || "";
+    const signature = request.headers.get("x-webhook-signature") || "";
 
     // Validate webhook signature
     if (!validateWebhookSignature(body, signature)) {
-      console.error("Invalid PayGo webhook signature");
+      console.error("Invalid PaySuite webhook signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    const data = JSON.parse(body);
-    const { transaction_id, order_id, status, amount } = data;
+    // Parse the event
+    const event = parseWebhookEvent(body);
+    if (!event) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
 
-    // Find order by payment reference or order number
+    console.log(`PaySuite webhook: ${event.event} for reference ${event.data.reference}`);
+
+    // Find order by payment reference (PaySuite payment ID) or order number
     const order = await prisma.order.findFirst({
       where: {
         OR: [
-          { paymentRef: transaction_id },
-          { orderNumber: order_id },
+          { paymentRef: event.data.id },
+          { orderNumber: event.data.reference },
         ],
       },
     });
 
     if (!order) {
-      console.error(`Order not found for transaction: ${transaction_id}`);
+      console.error(`Order not found for PaySuite payment: ${event.data.id} / ${event.data.reference}`);
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Update order payment status
-    if (status === "completed" || status === "success") {
+    // Process event
+    if (event.event === "payment.success") {
+      // Payment successful!
       await prisma.order.update({
         where: { id: order.id },
         data: {
           paymentStatus: "PAID",
           status: "CONFIRMED",
-          paymentRef: transaction_id,
+          paymentRef: event.data.id,
+          paymentMethod: event.data.transaction?.method
+            ? `paysuite_${event.data.transaction.method}`
+            : order.paymentMethod,
         },
       });
 
-      // Send notification to user
+      // Send push notification to user
       await sendOrderNotification(order.userId, order.orderNumber, "CONFIRMED");
 
-      // Create notification in database
+      // Create in-app notification
       await prisma.notification.create({
         data: {
           userId: order.userId,
-          title: "Pagamento confirmado",
-          message: `O pagamento da encomenda #${order.orderNumber} foi confirmado com sucesso.`,
+          title: "Pagamento confirmado!",
+          message: `O pagamento da encomenda #${order.orderNumber} (${event.data.amount} MT) foi confirmado com sucesso via ${event.data.transaction?.method || "PaySuite"}.`,
           type: "order",
-          data: { orderId: order.id, orderNumber: order.orderNumber },
+          data: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            amount: event.data.amount,
+            method: event.data.transaction?.method,
+          },
         },
       });
-    } else if (status === "failed" || status === "cancelled") {
+
+      console.log(`✅ Order ${order.orderNumber} payment confirmed!`);
+    } else if (event.event === "payment.failed") {
+      // Payment failed
       await prisma.order.update({
         where: { id: order.id },
         data: {
           paymentStatus: "FAILED",
         },
       });
+
+      // Notify user
+      await prisma.notification.create({
+        data: {
+          userId: order.userId,
+          title: "Pagamento falhou",
+          message: `O pagamento da encomenda #${order.orderNumber} falhou: ${event.data.error || "Tente novamente"}`,
+          type: "order",
+          data: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            error: event.data.error,
+          },
+        },
+      });
+
+      console.log(`❌ Order ${order.orderNumber} payment failed: ${event.data.error}`);
     }
 
-    return NextResponse.json({ success: true });
+    // Always respond 200 to acknowledge receipt
+    return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("Payment callback error:", error);
+    console.error("PaySuite webhook error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

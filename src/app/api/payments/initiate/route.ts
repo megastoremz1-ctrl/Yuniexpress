@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { initiatePayment } from "@/lib/services/paygo";
+import { createPayment } from "@/lib/services/paysuite";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,11 +10,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const { orderId, phone, method } = await request.json();
+    const { orderId, method } = await request.json();
 
-    if (!orderId || !phone || !method) {
+    if (!orderId) {
       return NextResponse.json(
-        { error: "Order ID, telefone e método de pagamento são obrigatórios" },
+        { error: "Order ID é obrigatório" },
         { status: 400 }
       );
     }
@@ -32,33 +32,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Esta encomenda já foi paga" }, { status: 400 });
     }
 
-    // Initiate payment via PayGo
-    const payment = await initiatePayment({
-      orderId: order.orderNumber,
+    // Create payment via PaySuite
+    const payment = await createPayment({
       amount: order.totalMZN,
-      phone,
-      method,
+      reference: order.orderNumber,
       description: `Pagamento YuniExpress #${order.orderNumber}`,
+      method: method || undefined, // mpesa, emola, or credit_card
+      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`,
+      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/callback`,
     });
 
-    if (payment.success) {
-      // Update order with payment reference
+    if (payment.success && payment.paymentId) {
+      // Update order with PaySuite payment ID
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          paymentRef: payment.transactionId,
-          paymentMethod: `paygo_${method}`,
+          paymentRef: payment.paymentId,
+          paymentMethod: method ? `paysuite_${method}` : "paysuite",
         },
       });
 
       return NextResponse.json({
         success: true,
-        transactionId: payment.transactionId,
-        message: "Pagamento iniciado. Confirme no seu telemóvel.",
+        paymentId: payment.paymentId,
+        checkoutUrl: payment.checkoutUrl,
+        message: "Redirecione o cliente para a página de pagamento.",
       });
     } else {
       return NextResponse.json(
-        { success: false, message: payment.message || "Erro ao iniciar pagamento" },
+        {
+          success: false,
+          message: payment.error || "Erro ao iniciar pagamento",
+        },
         { status: 400 }
       );
     }

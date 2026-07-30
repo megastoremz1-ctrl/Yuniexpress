@@ -60,23 +60,23 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Initiate payment
+      // Initiate payment via PaySuite
       const payRes = await fetch("/api/payments/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: orderData.order.id,
-          phone: phone || address.phone,
-          method: paymentMethod,
+          method: paymentMethod !== "all" ? paymentMethod : undefined,
         }),
       });
 
       const payData = await payRes.json();
 
-      if (payData.success) {
+      if (payData.success && payData.checkoutUrl) {
         clearCart();
-        toast.success("Encomenda criada! Confirme o pagamento no seu telemóvel.");
-        router.push(`/account/orders`);
+        toast.success("Redirecionando para o pagamento...");
+        // Redirect to PaySuite checkout page
+        window.location.href = payData.checkoutUrl;
       } else {
         toast.success("Encomenda criada! Complete o pagamento manualmente.");
         router.push(`/account/orders`);
@@ -148,7 +148,7 @@ export default function CheckoutPage() {
               {[
                 { id: "mpesa", label: "M-Pesa", description: "Vodacom M-Pesa" },
                 { id: "emola", label: "e-Mola", description: "Movitel e-Mola" },
-                { id: "mkesh", label: "Mkesh", description: "Millennium BIM Mkesh" },
+                { id: "all", label: "Outros Métodos", description: "Cartão de crédito e mais" },
               ].map((method) => (
                 <label
                   key={method.id}
