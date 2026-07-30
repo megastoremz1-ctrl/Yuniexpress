@@ -33,6 +33,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const { toggleItem, isInWishlist } = useWishlistStore();
   const inWishlist = isInWishlist(product.id);
 
+  const [showCartPopup, setShowCartPopup] = useState(false);
+
   // Get the active price based on selected variant
   const getActivePrice = () => {
     if (selectedVariant && product.variants.length > 0) {
@@ -69,7 +71,33 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
       variant: selectedVariant || undefined,
       stock: product.stock,
     });
-    toast.success("Adicionado ao carrinho!");
+    setShowCartPopup(true);
+
+    // Track view for recommendations
+    fetch("/api/recommendations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "view", value: product.id }),
+    }).catch(() => {});
+  };
+
+  const handleBuyNow = () => {
+    if (product.variants.length > 0 && !selectedVariant) {
+      toast.error("Selecione uma opção antes de comprar");
+      return;
+    }
+    addToCart({
+      id: `cart-${product.id}-${selectedVariant || "default"}-${Date.now()}`,
+      productId: product.id,
+      title: product.title + (selectedVariant ? ` (${selectedVariant})` : ""),
+      image: product.images[0]?.url || "",
+      priceMZN: activePrice,
+      originalPriceMZN: product.originalPriceMZN,
+      quantity,
+      variant: selectedVariant || undefined,
+      stock: product.stock,
+    });
+    window.location.href = "/checkout";
   };
 
   const handleWishlist = () => {
@@ -257,24 +285,31 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Actions - AliExpress style */}
           <div className="flex gap-3 mb-6">
-            <Button onClick={handleAddToCart} size="lg" fullWidth>
+            <Button onClick={handleAddToCart} variant="outline" size="lg" className="flex-1">
               <ShoppingCart size={18} className="mr-2" />
               Adicionar ao Carrinho
             </Button>
+            <Button onClick={handleBuyNow} size="lg" className="flex-1">
+              Comprar Agora
+            </Button>
+          </div>
+          <div className="flex gap-2">
             <button
               onClick={handleWishlist}
-              className={`p-3 rounded-lg border-2 transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-sm ${
                 inWishlist
                   ? "border-red-500 text-red-500 bg-red-50"
-                  : "border-gray-300 text-gray-500 hover:border-red-300"
+                  : "border-gray-200 text-gray-500 hover:border-red-300"
               }`}
             >
-              <Heart size={22} className={inWishlist ? "fill-current" : ""} />
+              <Heart size={18} className={inWishlist ? "fill-current" : ""} />
+              {inWishlist ? "Na lista" : "Favoritos"}
             </button>
-            <button className="p-3 rounded-lg border-2 border-gray-300 text-gray-500 hover:border-gray-400 transition-colors">
-              <Share2 size={22} />
+            <button className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-gray-200 text-gray-500 hover:border-gray-300 transition-colors text-sm">
+              <Share2 size={18} />
+              Partilhar
             </button>
           </div>
 
@@ -358,6 +393,65 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           <p className="text-sm text-gray-500">Ainda não há avaliações para este produto.</p>
         )}
       </div>
+
+      {/* Cart Popup - AliExpress style */}
+      {showCartPopup && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowCartPopup(false)}>
+          <div className="bg-white w-full sm:w-auto sm:min-w-[400px] sm:rounded-2xl rounded-t-2xl p-6 animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+            {/* Success header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">Adicionado ao carrinho!</p>
+                <p className="text-xs text-gray-500">O produto foi adicionado com sucesso</p>
+              </div>
+            </div>
+
+            {/* Product preview */}
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-5">
+              {product.images[0] && (
+                <img src={product.images[0].url} alt="" className="w-16 h-16 object-cover rounded-lg" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-800 line-clamp-2">{product.title}</p>
+                {selectedVariant && (
+                  <p className="text-xs text-gray-500 mt-0.5">{selectedVariant}</p>
+                )}
+                <p className="text-sm font-bold text-red-600 mt-1">{formatPrice(activePrice)} MT × {quantity}</p>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              <Link
+                href="/cart"
+                className="flex-1 flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-xl font-medium transition-colors text-sm"
+              >
+                <ShoppingCart size={16} />
+                Ver Carrinho
+              </Link>
+              <button
+                onClick={() => setShowCartPopup(false)}
+                className="flex-1 py-3 border-2 border-gray-200 hover:border-gray-300 rounded-xl font-medium text-gray-700 text-sm transition-colors"
+              >
+                Continuar Comprando
+              </button>
+            </div>
+
+            {/* Or go to checkout */}
+            <Link
+              href="/checkout"
+              className="block w-full text-center mt-3 py-2.5 text-sm text-yellow-600 font-medium hover:underline"
+            >
+              Finalizar compra agora →
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
