@@ -52,6 +52,78 @@ function generateSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 80) + "-" + Date.now().toString(36);
 }
 
+// Extract variants from product title (like AliExpress does)
+function extractVariantsFromTitle(title: string, basePriceMZN: number): { name: string; value: string; priceMZN: number; stock: number }[] {
+  const variants: { name: string; value: string; priceMZN: number; stock: number }[] = [];
+  const titleLower = title.toLowerCase();
+
+  // Storage/capacity: 4GB, 8GB, 16GB, 32GB, 64GB, 128GB, 256GB, 512GB, 1TB
+  const storageMatch = title.match(/(\d+)\s*(?:GB|TB)/gi);
+  if (storageMatch && storageMatch.length >= 2) {
+    const sizes = [...new Set(storageMatch.map(s => s.trim()))].slice(0, 6);
+    const baseSize = parseInt(sizes[0]);
+    sizes.forEach((size, i) => {
+      const sizeNum = parseInt(size);
+      const multiplier = Math.max(1, sizeNum / baseSize);
+      const price = Math.ceil(basePriceMZN * Math.min(multiplier, 5));
+      variants.push({ name: "Capacidade", value: size.toUpperCase(), priceMZN: price, stock: 50 - i * 5 });
+    });
+    return variants;
+  }
+
+  // Length: 1m, 2m, 3m, 5m, 10m, 15m, 20m
+  const lengthMatch = title.match(/(\d+)\s*m(?:\s|,|\/|$)/gi);
+  if (lengthMatch && lengthMatch.length >= 2) {
+    const lengths = [...new Set(lengthMatch.map(s => s.trim()))].slice(0, 5);
+    const baseLen = parseInt(lengths[0]) || 1;
+    lengths.forEach((len, i) => {
+      const lenNum = parseInt(len) || 1;
+      const multiplier = Math.max(1, lenNum / baseLen);
+      const price = Math.ceil(basePriceMZN * Math.min(multiplier, 6));
+      variants.push({ name: "Tamanho", value: len.replace(/\s/g, ""), priceMZN: price, stock: 40 });
+    });
+    return variants;
+  }
+
+  // Sizes: S, M, L, XL, XXL, XXXL or 36-46
+  if (titleLower.includes("dress") || titleLower.includes("shirt") || titleLower.includes("jacket") ||
+      titleLower.includes("hoodie") || titleLower.includes("pants") || titleLower.includes("blouse") ||
+      titleLower.includes("sweater") || titleLower.includes("coat") || titleLower.includes("skirt")) {
+    const sizes = ["S", "M", "L", "XL", "XXL"];
+    sizes.forEach((size, i) => {
+      const price = i >= 3 ? Math.ceil(basePriceMZN * (1 + (i - 2) * 0.05)) : basePriceMZN;
+      variants.push({ name: "Tamanho", value: size, priceMZN: price, stock: 30 });
+    });
+    return variants;
+  }
+
+  // Shoe sizes
+  if (titleLower.includes("shoe") || titleLower.includes("sneaker") || titleLower.includes("boot") ||
+      titleLower.includes("sandal") || titleLower.includes("slipper")) {
+    const sizes = ["38", "39", "40", "41", "42", "43", "44"];
+    sizes.forEach((size) => {
+      variants.push({ name: "Tamanho", value: size, priceMZN: basePriceMZN, stock: 20 });
+    });
+    return variants;
+  }
+
+  // Colors (from title or common products)
+  if (titleLower.includes("color") || titleLower.includes("black") || titleLower.includes("white") ||
+      titleLower.includes("earphone") || titleLower.includes("earbuds") || titleLower.includes("headphone") ||
+      titleLower.includes("case") || titleLower.includes("cover") || titleLower.includes("watch band")) {
+    const colors = ["Preto", "Branco"];
+    if (titleLower.includes("blue") || titleLower.includes("color")) colors.push("Azul");
+    if (titleLower.includes("red") || titleLower.includes("color")) colors.push("Vermelho");
+    if (titleLower.includes("pink") || titleLower.includes("color")) colors.push("Rosa");
+    colors.forEach((color) => {
+      variants.push({ name: "Cor", value: color, priceMZN: basePriceMZN, stock: 40 });
+    });
+    return variants;
+  }
+
+  return variants;
+}
+
 // Admin manual sync - uses session auth instead of cron secret
 export async function POST(request: NextRequest) {
   try {
@@ -133,6 +205,9 @@ export async function POST(request: NextRequest) {
               const mainImage = p.product_main_image_url || "";
               const smallImages: string[] = (p.product_small_image_urls?.string || []).slice(0, 4);
 
+              // Extract variants from title
+              const variants = extractVariantsFromTitle(p.product_title, priceMZN);
+
               await prisma.product.create({
                 data: {
                   aliexpressId: productId,
@@ -159,6 +234,16 @@ export async function POST(request: NextRequest) {
                       ...smallImages.map((url: string, i: number) => ({ url, order: i + 1 })),
                     ],
                   },
+                  ...(variants.length > 0 ? {
+                    variants: {
+                      create: variants.map((v) => ({
+                        name: v.name,
+                        value: v.value,
+                        priceMZN: v.priceMZN,
+                        stock: v.stock,
+                      })),
+                    },
+                  } : {}),
                 },
               });
             }

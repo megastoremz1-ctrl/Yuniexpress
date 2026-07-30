@@ -66,6 +66,66 @@ function generateSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 80) + "-" + Date.now().toString(36);
 }
 
+// Extract variants from product title (sizes, colors, capacity)
+function extractVariantsFromTitle(title: string, basePriceMZN: number): { name: string; value: string; priceMZN: number; stock: number }[] {
+  const variants: { name: string; value: string; priceMZN: number; stock: number }[] = [];
+  const titleLower = title.toLowerCase();
+
+  // Storage: 4GB, 8GB, 16GB, 32GB, 64GB, 128GB, 256GB
+  const storageMatch = title.match(/(\d+)\s*(?:GB|TB)/gi);
+  if (storageMatch && storageMatch.length >= 2) {
+    const sizes = [...new Set(storageMatch.map(s => s.trim()))].slice(0, 6);
+    const baseSize = parseInt(sizes[0]);
+    sizes.forEach((size, i) => {
+      const sizeNum = parseInt(size);
+      const multiplier = Math.max(1, sizeNum / baseSize);
+      variants.push({ name: "Capacidade", value: size.toUpperCase(), priceMZN: Math.ceil(basePriceMZN * Math.min(multiplier, 5)), stock: 50 - i * 5 });
+    });
+    return variants;
+  }
+
+  // Length: 1m, 2m, 3m, 5m, 10m
+  const lengthMatch = title.match(/(\d+)\s*m(?:\s|,|\/|$)/gi);
+  if (lengthMatch && lengthMatch.length >= 2) {
+    const lengths = [...new Set(lengthMatch.map(s => s.trim()))].slice(0, 5);
+    const baseLen = parseInt(lengths[0]) || 1;
+    lengths.forEach((len) => {
+      const lenNum = parseInt(len) || 1;
+      variants.push({ name: "Tamanho", value: len.replace(/\s/g, ""), priceMZN: Math.ceil(basePriceMZN * Math.max(1, lenNum / baseLen)), stock: 40 });
+    });
+    return variants;
+  }
+
+  // Clothing sizes
+  if (titleLower.match(/dress|shirt|jacket|hoodie|pants|blouse|sweater|coat|skirt|t-shirt/)) {
+    ["S", "M", "L", "XL", "XXL"].forEach((size, i) => {
+      variants.push({ name: "Tamanho", value: size, priceMZN: i >= 3 ? Math.ceil(basePriceMZN * 1.05) : basePriceMZN, stock: 30 });
+    });
+    return variants;
+  }
+
+  // Shoe sizes
+  if (titleLower.match(/shoe|sneaker|boot|sandal|slipper/)) {
+    ["38", "39", "40", "41", "42", "43", "44"].forEach((size) => {
+      variants.push({ name: "Tamanho", value: size, priceMZN: basePriceMZN, stock: 20 });
+    });
+    return variants;
+  }
+
+  // Colors for electronics/accessories
+  if (titleLower.match(/earphone|earbuds|headphone|tws|case|cover|watch|band|mouse|keyboard/)) {
+    ["Preto", "Branco"].forEach((color) => {
+      variants.push({ name: "Cor", value: color, priceMZN: basePriceMZN, stock: 40 });
+    });
+    if (titleLower.includes("color") || titleLower.includes("blue")) {
+      variants.push({ name: "Cor", value: "Azul", priceMZN: basePriceMZN, stock: 30 });
+    }
+    return variants;
+  }
+
+  return variants;
+}
+
 // Sync products - ADDS new ones, UPDATES existing, NEVER deletes
 async function syncCategory(keywords: string, categorySlug: string, rate: number, margin: number) {
   let processed = 0;
@@ -113,6 +173,10 @@ async function syncCategory(keywords: string, categorySlug: string, rate: number
       } else {
         // ADD new product
         const slug = generateSlug(p.product_title);
+
+        // Extract variants from title
+        const variants = extractVariantsFromTitle(p.product_title, priceMZN);
+
         await prisma.product.create({
           data: {
             aliexpressId: productId,
@@ -131,8 +195,8 @@ async function syncCategory(keywords: string, categorySlug: string, rate: number
             freeShipping: true,
             aliexpressUrl: p.product_detail_url || "",
             affiliateUrl: p.promotion_link || "",
-            status: "APPROVED", // Auto-approve new synced products
-            featured: Math.random() < 0.3, // 30% chance featured
+            status: "APPROVED",
+            featured: Math.random() < 0.3,
             categoryId: category?.id || null,
             images: {
               create: [
@@ -140,6 +204,16 @@ async function syncCategory(keywords: string, categorySlug: string, rate: number
                 ...smallImages.map((url: string, i: number) => ({ url, order: i + 1 })),
               ],
             },
+            ...(variants.length > 0 ? {
+              variants: {
+                create: variants.map((v) => ({
+                  name: v.name,
+                  value: v.value,
+                  priceMZN: v.priceMZN,
+                  stock: v.stock,
+                })),
+              },
+            } : {}),
           },
         });
       }
