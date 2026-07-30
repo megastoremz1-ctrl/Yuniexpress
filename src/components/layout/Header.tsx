@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
@@ -10,8 +10,6 @@ import {
   User,
   Menu,
   X,
-  ChevronDown,
-  Package,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
@@ -20,10 +18,18 @@ export default function Header() {
   const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settings, setSettings] = useState<Record<string, string>>({});
   const cartItems = useCartStore((s) => s.items);
   const wishlistItems = useWishlistStore((s) => s.items);
 
   const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => setSettings(d.settings || {}))
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +38,17 @@ export default function Header() {
     }
   };
 
+  const announcementActive = settings.announcement_active === "true" && settings.announcement_bar;
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
+      {/* Announcement bar */}
+      {announcementActive && (
+        <div className="bg-yellow-500 text-black text-xs py-1.5 text-center font-medium">
+          {settings.announcement_bar}
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="bg-gray-900 text-white text-xs py-1.5">
         <div className="container mx-auto px-4 flex justify-between items-center">
@@ -60,13 +75,21 @@ export default function Header() {
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          {/* Logo */}
+          {/* Logo - uses custom logo from settings or default */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <img
-              src="/images/logo.png"
-              alt="YuniExpress"
-              className="h-10 w-auto hidden sm:block"
-            />
+            {settings.store_logo ? (
+              <img
+                src={settings.store_logo}
+                alt={settings.store_name || "YuniExpress"}
+                className="h-10 w-auto hidden sm:block"
+              />
+            ) : (
+              <img
+                src="/images/logo.png"
+                alt="YuniExpress"
+                className="h-10 w-auto hidden sm:block"
+              />
+            )}
             <img
               src="/icons/icon-192x192.png"
               alt="YuniExpress"
@@ -149,54 +172,14 @@ export default function Header() {
       <nav className="hidden lg:block border-t bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-6 py-2 text-sm">
-            <Link
-              href="/category/electronics"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Electrónica
-            </Link>
-            <Link
-              href="/category/fashion"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Moda
-            </Link>
-            <Link
-              href="/category/home"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Casa & Jardim
-            </Link>
-            <Link
-              href="/category/beauty"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Beleza & Saúde
-            </Link>
-            <Link
-              href="/category/sports"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Desporto
-            </Link>
-            <Link
-              href="/category/toys"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Brinquedos
-            </Link>
-            <Link
-              href="/category/automotive"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Automóveis
-            </Link>
-            <Link
-              href="/category/phones"
-              className="text-gray-700 hover:text-yellow-600 font-medium transition-colors"
-            >
-              Telemóveis
-            </Link>
+            <Link href="/category/electronics" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Electrónica</Link>
+            <Link href="/category/fashion" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Moda</Link>
+            <Link href="/category/home" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Casa & Jardim</Link>
+            <Link href="/category/beauty" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Beleza & Saúde</Link>
+            <Link href="/category/sports" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Desporto</Link>
+            <Link href="/category/toys" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Brinquedos</Link>
+            <Link href="/category/automotive" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Automóveis</Link>
+            <Link href="/category/phones" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Telemóveis</Link>
           </div>
         </div>
       </nav>
@@ -206,31 +189,16 @@ export default function Header() {
         <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t shadow-lg z-50">
           <div className="container mx-auto px-4 py-4 space-y-3">
             {!session?.user && (
-              <Link
-                href="/login"
-                className="block w-full text-center bg-yellow-500 text-white py-2.5 rounded-lg font-medium"
-              >
+              <Link href="/login" className="block w-full text-center bg-yellow-500 text-white py-2.5 rounded-lg font-medium">
                 Entrar / Registar
               </Link>
             )}
-            <Link href="/category/electronics" className="block py-2 text-gray-700">
-              Electrónica
-            </Link>
-            <Link href="/category/fashion" className="block py-2 text-gray-700">
-              Moda
-            </Link>
-            <Link href="/category/home" className="block py-2 text-gray-700">
-              Casa & Jardim
-            </Link>
-            <Link href="/category/beauty" className="block py-2 text-gray-700">
-              Beleza & Saúde
-            </Link>
-            <Link href="/category/sports" className="block py-2 text-gray-700">
-              Desporto
-            </Link>
-            <Link href="/account/orders" className="block py-2 text-gray-700">
-              Minhas Encomendas
-            </Link>
+            <Link href="/category/electronics" className="block py-2 text-gray-700">Electrónica</Link>
+            <Link href="/category/fashion" className="block py-2 text-gray-700">Moda</Link>
+            <Link href="/category/home" className="block py-2 text-gray-700">Casa & Jardim</Link>
+            <Link href="/category/beauty" className="block py-2 text-gray-700">Beleza & Saúde</Link>
+            <Link href="/category/sports" className="block py-2 text-gray-700">Desporto</Link>
+            <Link href="/account/orders" className="block py-2 text-gray-700">Minhas Encomendas</Link>
           </div>
         </div>
       )}
