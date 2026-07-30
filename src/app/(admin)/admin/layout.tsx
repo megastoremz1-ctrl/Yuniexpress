@@ -9,6 +9,7 @@ import {
   Package,
   LayoutDashboard,
   ShoppingBag,
+  Users,
   Image,
   Settings,
   LogOut,
@@ -22,6 +23,7 @@ const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Produtos", icon: ShoppingBag },
   { href: "/admin/orders", label: "Encomendas", icon: Package },
+  { href: "/admin/clients", label: "Clientes", icon: Users },
   { href: "/admin/banners", label: "Banners", icon: Image },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
