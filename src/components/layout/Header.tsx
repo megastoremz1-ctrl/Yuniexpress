@@ -144,24 +144,24 @@ export default function Header() {
               )}
             </Link>
 
-            {/* User */}
+            {/* User - always visible */}
             {session?.user ? (
               <Link
                 href="/account"
-                className="hidden sm:flex items-center gap-2 p-2 text-gray-600 hover:text-yellow-600 transition-colors"
+                className="flex items-center gap-1.5 p-2 text-gray-600 hover:text-yellow-600 transition-colors"
               >
-                <User size={22} />
-                <span className="text-sm font-medium max-w-[100px] truncate">
+                <User size={20} />
+                <span className="text-xs sm:text-sm font-medium max-w-[60px] sm:max-w-[100px] truncate hidden xs:inline">
                   {session.user.name?.split(" ")[0]}
                 </span>
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="hidden sm:flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
               >
-                <User size={16} />
-                Entrar
+                <User size={14} />
+                <span>Entrar</span>
               </Link>
             )}
           </div>

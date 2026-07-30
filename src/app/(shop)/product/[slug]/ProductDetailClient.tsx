@@ -33,9 +33,20 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const { toggleItem, isInWishlist } = useWishlistStore();
   const inWishlist = isInWishlist(product.id);
 
+  // Get the active price based on selected variant
+  const getActivePrice = () => {
+    if (selectedVariant && product.variants.length > 0) {
+      const variant = product.variants.find((v) => v.value === selectedVariant);
+      if (variant?.priceMZN) return variant.priceMZN;
+    }
+    return product.priceMZN;
+  };
+
+  const activePrice = getActivePrice();
+
   const discount = product.originalPriceMZN
     ? Math.round(
-        ((product.originalPriceMZN - product.priceMZN) / product.originalPriceMZN) * 100
+        ((product.originalPriceMZN - activePrice) / product.originalPriceMZN) * 100
       )
     : 0;
 
@@ -43,12 +54,16 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     new Intl.NumberFormat("pt-MZ", { style: "decimal", minimumFractionDigits: 0 }).format(price);
 
   const handleAddToCart = () => {
+    if (product.variants.length > 0 && !selectedVariant) {
+      toast.error("Selecione uma opção antes de adicionar ao carrinho");
+      return;
+    }
     addToCart({
       id: `cart-${product.id}-${selectedVariant || "default"}-${Date.now()}`,
       productId: product.id,
-      title: product.title,
+      title: product.title + (selectedVariant ? ` (${selectedVariant})` : ""),
       image: product.images[0]?.url || "",
-      priceMZN: product.priceMZN,
+      priceMZN: activePrice,
       originalPriceMZN: product.originalPriceMZN,
       quantity,
       variant: selectedVariant || undefined,
@@ -157,13 +172,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             </span>
           </div>
 
-          {/* Price */}
+          {/* Price - updates based on selected variant */}
           <div className="bg-orange-50 p-4 rounded-xl mb-6">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-red-600">
-                {formatPrice(product.priceMZN)} MT
+                {formatPrice(activePrice)} MT
               </span>
-              {product.originalPriceMZN && (
+              {product.originalPriceMZN && product.originalPriceMZN > activePrice && (
                 <span className="text-lg text-gray-400 line-through">
                   {formatPrice(product.originalPriceMZN)} MT
                 </span>
@@ -174,6 +189,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 </span>
               )}
             </div>
+            {selectedVariant && (
+              <p className="text-xs text-gray-500 mt-1">
+                Preço para: <strong>{selectedVariant}</strong>
+              </p>
+            )}
           </div>
 
           {/* Variants with prices */}
