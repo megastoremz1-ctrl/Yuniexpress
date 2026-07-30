@@ -13,13 +13,13 @@ async function getHomeData() {
         where: { status: "APPROVED", featured: true },
         include: { images: { take: 2, orderBy: { order: "asc" } } },
         orderBy: { sold: "desc" },
-        take: 12,
+        take: 24,
       }),
       prisma.product.findMany({
         where: { status: "APPROVED" },
         include: { images: { take: 2, orderBy: { order: "asc" } } },
         orderBy: { createdAt: "desc" },
-        take: 30,
+        take: 48,
       }),
       prisma.category.findMany({
         where: { featured: true },

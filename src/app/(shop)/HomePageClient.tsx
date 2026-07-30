@@ -47,8 +47,8 @@ export default function HomePageClient({
   return (
     <div>
       {/* Hero Section - AliExpress style with sidebar categories */}
-      <div className="container mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4">
+      <div className="container mx-auto px-4 pt-3 pb-2">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-3">
           {/* Category Sidebar - Desktop */}
           <aside className="hidden lg:block bg-white rounded-xl border overflow-hidden">
             <div className="p-3 bg-gray-900 text-white text-sm font-semibold">
@@ -84,7 +84,7 @@ export default function HomePageClient({
 
       <div className="container mx-auto px-4">
         {/* Trust Badges - AliExpress style */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 py-4">
           <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
             <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center shrink-0">
               <Truck className="text-green-600" size={18} />
@@ -147,7 +147,7 @@ export default function HomePageClient({
         </div>
 
         {/* Flash Deals Banner */}
-        <div className="my-6 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 rounded-2xl p-5 md:p-6 text-white relative overflow-hidden">
+        <div className="my-4 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 rounded-xl p-4 md:p-5 text-white relative overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-black/20 to-transparent" />
           <div className="relative flex items-center gap-3">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -164,7 +164,7 @@ export default function HomePageClient({
         </div>
 
         {/* Product Tabs - AliExpress style */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex items-center gap-1 border-b">
             <button
               onClick={() => setActiveTab("featured")}
@@ -202,8 +202,8 @@ export default function HomePageClient({
           </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        {/* Products Grid - aligned */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
           {(activeTab === "featured"
             ? featuredProducts
             : activeTab === "new"
@@ -217,7 +217,7 @@ export default function HomePageClient({
         </div>
 
         {/* Load more */}
-        <div className="text-center py-8">
+        <div className="text-center py-6">
           <Link
             href={`/search?sort=${activeTab === "new" ? "newest" : "popular"}`}
             className="inline-flex items-center gap-2 px-8 py-3 bg-white border-2 border-yellow-500 text-yellow-600 rounded-full font-medium hover:bg-yellow-50 transition-colors"
