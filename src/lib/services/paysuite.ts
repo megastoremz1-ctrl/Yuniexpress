@@ -52,8 +52,8 @@ export async function createPayment(
 
   const payload: Record<string, any> = {
     amount: request.amount.toFixed(2),
-    reference: request.reference,
-    description: request.description || `Pagamento YuniExpress #${request.reference}`,
+    reference: request.reference.replace(/[^a-zA-Z0-9]/g, ""), // Only letters and numbers
+    description: (request.description || `Pagamento YuniExpress ${request.reference}`).slice(0, 125),
     return_url: request.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`,
   };
 

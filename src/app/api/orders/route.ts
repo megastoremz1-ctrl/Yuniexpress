@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
 
     const totalMZN = subtotalMZN - discountMZN;
 
-    // Generate order number
-    const orderNumber = `YE-${Date.now().toString(36).toUpperCase()}`;
+    // Generate order number (only letters and numbers - PaySuite requirement)
+    const orderNumber = `YE${Date.now().toString(36).toUpperCase()}`;
 
     // Create order
     const order = await prisma.order.create({
