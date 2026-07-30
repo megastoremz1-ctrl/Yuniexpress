@@ -34,13 +34,14 @@ interface AdminOrder {
   items: OrderItem[];
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  PENDING: { label: "Pendente", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: Clock },
-  CONFIRMED: { label: "Confirmada", color: "bg-blue-100 text-blue-700 border-blue-200", icon: CheckCircle },
-  PROCESSING: { label: "Processando", color: "bg-purple-100 text-purple-700 border-purple-200", icon: RefreshCw },
-  SHIPPED: { label: "Enviada", color: "bg-indigo-100 text-indigo-700 border-indigo-200", icon: Truck },
+const statusConfig: Record<string, { label: string; color: string; icon: any; next?: string }> = {
+  PENDING: { label: "Aguardando Pagamento", color: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: Clock, next: "CONFIRMED" },
+  CONFIRMED: { label: "Pago / Confirmado", color: "bg-blue-100 text-blue-700 border-blue-200", icon: CheckCircle, next: "PROCESSING" },
+  PROCESSING: { label: "Em Preparação", color: "bg-purple-100 text-purple-700 border-purple-200", icon: RefreshCw, next: "SHIPPED" },
+  SHIPPED: { label: "Enviado", color: "bg-indigo-100 text-indigo-700 border-indigo-200", icon: Truck, next: "DELIVERED" },
   DELIVERED: { label: "Entregue", color: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle },
-  CANCELLED: { label: "Cancelada", color: "bg-red-100 text-red-700 border-red-200", icon: XCircle },
+  CANCELLED: { label: "Cancelado", color: "bg-red-100 text-red-700 border-red-200", icon: XCircle },
+  REFUNDED: { label: "Reembolsado", color: "bg-gray-100 text-gray-700 border-gray-200", icon: XCircle },
 };
 
 export default function AdminOrdersPage() {
@@ -195,12 +196,42 @@ export default function AdminOrdersPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-lg font-bold text-gray-900">{formatPrice(order.totalMZN)} MT</p>
-                    <button
-                      onClick={() => { setSelectedOrder(order); setNewStatus(order.status); }}
-                      className="mt-2 text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
-                    >
-                      Gerir →
-                    </button>
+                    <div className="flex flex-col gap-1 mt-2">
+                      {/* Quick advance button */}
+                      {statusConfig[order.status]?.next && (
+                        <button
+                          onClick={async () => {
+                            const nextStatus = statusConfig[order.status]?.next;
+                            if (!nextStatus) return;
+                            if (nextStatus === "SHIPPED") {
+                              setSelectedOrder(order);
+                              setNewStatus("SHIPPED");
+                              return;
+                            }
+                            try {
+                              const res = await fetch("/api/admin/orders", {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ orderId: order.id, status: nextStatus }),
+                              });
+                              if (res.ok) {
+                                toast.success(`Avançado para: ${statusConfig[nextStatus]?.label}`);
+                                fetchOrders();
+                              }
+                            } catch { toast.error("Erro"); }
+                          }}
+                          className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                        >
+                          → {statusConfig[statusConfig[order.status]?.next || ""]?.label || "Avançar"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setSelectedOrder(order); setNewStatus(order.status); }}
+                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium transition-colors"
+                      >
+                        Detalhes
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -292,37 +323,66 @@ export default function AdminOrdersPage() {
               {/* Update Status */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Alterar Estado</h3>
+                
+                {/* Status Progress Bar */}
+                <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-2">
+                  {["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"].map((s, i) => {
+                    const statusList = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
+                    const currentIndex = statusList.indexOf(selectedOrder.status);
+                    const isComplete = i <= currentIndex;
+                    const isCurrent = s === selectedOrder.status;
+                    return (
+                      <div key={s} className="flex items-center">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                          isComplete ? "bg-green-500 text-white" : isCurrent ? "bg-yellow-500 text-white" : "bg-gray-200 text-gray-500"
+                        }`}>
+                          {i + 1}
+                        </div>
+                        {i < 4 && <div className={`w-6 h-0.5 ${isComplete ? "bg-green-500" : "bg-gray-200"}`} />}
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <div className="space-y-3">
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
                     className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-500/30 focus:outline-none"
                   >
-                    <option value="PENDING">Pendente</option>
-                    <option value="CONFIRMED">Confirmada</option>
-                    <option value="PROCESSING">Em processamento</option>
-                    <option value="SHIPPED">Enviada</option>
-                    <option value="DELIVERED">Entregue</option>
-                    <option value="CANCELLED">Cancelada</option>
+                    <option value="PENDING">⏳ Aguardando Pagamento</option>
+                    <option value="CONFIRMED">✅ Pago / Confirmado</option>
+                    <option value="PROCESSING">🔄 Em Preparação</option>
+                    <option value="SHIPPED">🚚 Enviado</option>
+                    <option value="DELIVERED">✔️ Entregue</option>
+                    <option value="CANCELLED">❌ Cancelado</option>
+                    <option value="REFUNDED">💰 Reembolsado</option>
                   </select>
 
-                  {newStatus === "SHIPPED" && (
-                    <Input
-                      label="Número de rastreamento (opcional)"
-                      value={trackingNumber}
-                      onChange={(e) => setTrackingNumber(e.target.value)}
-                      placeholder="Ex: LZ123456789CN"
-                    />
+                  {(newStatus === "SHIPPED" || selectedOrder.status === "SHIPPED") && (
+                    <div className="space-y-2">
+                      <Input
+                        label="Número de rastreamento"
+                        value={trackingNumber || selectedOrder.trackingNumber || ""}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder="Ex: LP123456789MZ ou LZ123456789CN"
+                      />
+                      <p className="text-xs text-gray-500">
+                        O cliente receberá notificação com este número para rastrear a encomenda
+                      </p>
+                    </div>
                   )}
 
                   <Button
                     onClick={handleUpdateStatus}
                     loading={updating}
                     fullWidth
-                    disabled={newStatus === selectedOrder.status}
+                    disabled={newStatus === selectedOrder.status && !trackingNumber}
                   >
-                    {newStatus === selectedOrder.status
+                    {newStatus === selectedOrder.status && !trackingNumber
                       ? "Selecione um novo estado"
+                      : trackingNumber && newStatus === selectedOrder.status
+                      ? "Actualizar Rastreamento"
                       : `Actualizar para: ${statusConfig[newStatus]?.label || newStatus}`}
                   </Button>
                 </div>
