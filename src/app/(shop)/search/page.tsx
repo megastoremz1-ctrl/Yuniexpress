@@ -37,10 +37,28 @@ function SearchContent() {
       if (maxPrice) params.set("maxPrice", maxPrice);
       if (freeShipping) params.set("freeShipping", "true");
 
+      // First search local DB
       const res = await fetch(`/api/products?${params}`);
       const data = await res.json();
-      setProducts(data.products || []);
-      setTotal(data.pagination?.total || 0);
+
+      if (data.products && data.products.length > 0) {
+        setProducts(data.products);
+        setTotal(data.pagination?.total || 0);
+      } else if (query) {
+        // No local results → search AliExpress in real-time
+        const liveRes = await fetch(`/api/search/live?q=${encodeURIComponent(query)}&page=${page}`);
+        const liveData = await liveRes.json();
+        if (liveData.products && liveData.products.length > 0) {
+          setProducts(liveData.products);
+          setTotal(liveData.total || liveData.products.length);
+        } else {
+          setProducts([]);
+          setTotal(0);
+        }
+      } else {
+        setProducts([]);
+        setTotal(0);
+      }
     } catch (error) {
       console.error("Search error:", error);
     } finally {

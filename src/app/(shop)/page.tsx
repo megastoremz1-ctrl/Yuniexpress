@@ -12,14 +12,13 @@ async function getHomeData() {
       prisma.product.findMany({
         where: { status: "APPROVED", featured: true },
         include: { images: { take: 2, orderBy: { order: "asc" } } },
-        orderBy: { sold: "desc" },
+        orderBy: { createdAt: "desc" },
         take: 24,
       }),
       prisma.product.findMany({
         where: { status: "APPROVED" },
         include: { images: { take: 2, orderBy: { order: "asc" } } },
-        orderBy: { createdAt: "desc" },
-        take: 48,
+        take: 60,
       }),
       prisma.category.findMany({
         where: { featured: true },
@@ -45,6 +44,16 @@ async function getHomeData() {
       images: p.images.map((img: any) => ({ url: img.url, alt: img.alt })),
     });
 
+    // Shuffle products to mix categories
+    const shuffle = (arr: any[]) => {
+      const shuffled = [...arr];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
     return {
       banners: banners.map((b: any) => ({
         id: b.id,
@@ -53,8 +62,8 @@ async function getHomeData() {
         image: b.image,
         link: b.link,
       })),
-      featuredProducts: featuredProducts.map(mapProduct),
-      newProducts: newProducts.map(mapProduct),
+      featuredProducts: shuffle(featuredProducts.map(mapProduct)),
+      newProducts: shuffle(newProducts.map(mapProduct)),
       categories: categories.map((c: any) => ({
         id: c.id,
         name: c.name,
