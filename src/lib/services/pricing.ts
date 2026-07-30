@@ -17,23 +17,31 @@ export async function getExchangeRate(): Promise<number> {
     return cached.rate;
   }
 
-  // Otherwise, fetch from API
+  // Otherwise, fetch from exchangeratesapi.io
   try {
     const apiKey = process.env.EXCHANGE_RATE_API_KEY;
     let rate: number;
 
     if (apiKey) {
-      // Use exchangeratesapi.io or similar
+      // exchangeratesapi.io (free plan only supports EUR base)
+      // So we get EUR→USD and EUR→MZN, then calculate USD→MZN
       const response = await axios.get(
-        `https://v6.exchangerate-api.com/v6/${apiKey}/pair/USD/MZN`
+        `https://api.exchangeratesapi.io/v1/latest?access_key=${apiKey}&symbols=USD,MZN`
       );
-      rate = response.data.conversion_rate;
+
+      if (response.data.success && response.data.rates) {
+        const eurToUsd = response.data.rates.USD;
+        const eurToMzn = response.data.rates.MZN;
+        rate = eurToMzn / eurToUsd; // USD → MZN
+      } else {
+        throw new Error("API response invalid");
+      }
     } else {
-      // Fallback: use free API
+      // Fallback: use free API (no key needed)
       const response = await axios.get(
         "https://api.exchangerate-api.com/v4/latest/USD"
       );
-      rate = response.data.rates.MZN || 63.5; // Fallback rate
+      rate = response.data.rates.MZN || 63.5;
     }
 
     // Save to database
@@ -42,15 +50,16 @@ export async function getExchangeRate(): Promise<number> {
         fromCurrency: "USD",
         toCurrency: "MZN",
         rate,
-        source: apiKey ? "exchangerate-api" : "free-api",
+        source: apiKey ? "exchangeratesapi.io" : "free-api",
       },
     });
 
+    console.log(`Exchange rate updated: 1 USD = ${rate.toFixed(2)} MZN`);
     return rate;
   } catch (error) {
     // If API fails, use cached or default
     if (cached) return cached.rate;
-    return 63.5; // Default fallback rate (approximate USD to MZN)
+    return 63.5; // Default fallback rate
   }
 }
 
