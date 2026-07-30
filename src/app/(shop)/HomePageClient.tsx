@@ -1,17 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import HeroBanner from "@/components/home/HeroBanner";
-import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
-import { BannerData, ProductCard, CategoryData } from "@/types";
-import { Zap, Truck, Shield, HeadphonesIcon } from "lucide-react";
+import ProductCard from "@/components/product/ProductCard";
+import { BannerData, ProductCard as ProductCardType, CategoryData } from "@/types";
+import {
+  Zap, Truck, Shield, HeadphonesIcon, Smartphone, Shirt, Home,
+  Sparkles, Dumbbell, Gamepad2, Car, Watch, Monitor, ShoppingBag,
+  Baby, Wrench, Lightbulb, BookOpen, Footprints, PawPrint,
+  ChevronRight, Flame, Clock, Star,
+} from "lucide-react";
+
+const categoryIcons: Record<string, any> = {
+  Monitor, Smartphone, Laptop: Monitor, Shirt, Home, Sparkles,
+  Dumbbell, Gamepad2, Car, Watch, ShoppingBag, Footprints,
+  Baby, Wrench, Lightbulb, BookOpen, PawPrint, Shield,
+};
 
 interface HomePageClientProps {
   banners: BannerData[];
-  featuredProducts: ProductCard[];
-  newProducts: ProductCard[];
+  featuredProducts: ProductCardType[];
+  newProducts: ProductCardType[];
   categories: CategoryData[];
+  settings: Record<string, string>;
 }
 
 export default function HomePageClient({
@@ -19,92 +32,204 @@ export default function HomePageClient({
   featuredProducts,
   newProducts,
   categories,
+  settings,
 }: HomePageClientProps) {
-  const [recommendations, setRecommendations] = useState<ProductCard[]>([]);
+  const [recommendations, setRecommendations] = useState<ProductCardType[]>([]);
+  const [activeTab, setActiveTab] = useState<"featured" | "new" | "recommended">("featured");
 
   useEffect(() => {
-    // Fetch personalized recommendations
     fetch("/api/recommendations?limit=12")
       .then((r) => r.json())
       .then((d) => setRecommendations(d.products || []))
       .catch(() => {});
   }, []);
+
   return (
-    <div className="container mx-auto px-4 py-6">
-      {/* Hero Banner */}
-      <HeroBanner banners={banners} />
+    <div>
+      {/* Hero Section - AliExpress style with sidebar categories */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4">
+          {/* Category Sidebar - Desktop */}
+          <aside className="hidden lg:block bg-white rounded-xl border overflow-hidden">
+            <div className="p-3 bg-gray-900 text-white text-sm font-semibold">
+              Categorias
+            </div>
+            <nav className="py-1">
+              {categories.slice(0, 13).map((cat) => {
+                const IconComp = categoryIcons[cat.icon || ""] || ShoppingBag;
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}`}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 transition-colors group"
+                  >
+                    <IconComp size={16} className="text-gray-400 group-hover:text-yellow-600" />
+                    <span className="flex-1 truncate">{cat.name}</span>
+                    <ChevronRight size={12} className="text-gray-300" />
+                  </Link>
+                );
+              })}
+              <Link href="/categories" className="flex items-center gap-3 px-4 py-2.5 text-sm text-yellow-600 font-medium hover:bg-yellow-50">
+                Ver todas →
+              </Link>
+            </nav>
+          </aside>
 
-      {/* Trust badges */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-8">
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-          <Truck className="text-yellow-500 shrink-0" size={24} />
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Entrega em MZ</p>
-            <p className="text-xs text-gray-500">Em todo o país</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-          <Shield className="text-yellow-500 shrink-0" size={24} />
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Pagamento Seguro</p>
-            <p className="text-xs text-gray-500">M-Pesa, e-Mola</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-          <Zap className="text-yellow-500 shrink-0" size={24} />
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Preços em MT</p>
-            <p className="text-xs text-gray-500">Sem surpresas</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border">
-          <HeadphonesIcon className="text-yellow-500 shrink-0" size={24} />
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Suporte 24/7</p>
-            <p className="text-xs text-gray-500">Sempre disponível</p>
+          {/* Main Banner */}
+          <div className="min-h-[300px] md:min-h-[380px]">
+            <HeroBanner banners={banners} />
           </div>
         </div>
       </div>
 
-      {/* Categories */}
-      <CategoryGrid categories={categories} />
-
-      {/* Featured Products */}
-      <FeaturedProducts
-        title="Produtos em Destaque"
-        products={featuredProducts}
-        viewAllLink="/search?featured=true"
-      />
-
-      {/* Flash Sale Banner */}
-      <div className="my-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-6 md:p-8 text-white">
-        <div className="flex items-center gap-2 mb-2">
-          <Zap className="fill-white" size={24} />
-          <h2 className="text-2xl font-bold">Super Ofertas</h2>
+      <div className="container mx-auto px-4">
+        {/* Trust Badges - AliExpress style */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-6">
+          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center shrink-0">
+              <Truck className="text-green-600" size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-900">Entrega em MZ</p>
+              <p className="text-[10px] text-gray-500">Em todo o país</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
+              <Shield className="text-blue-600" size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-900">Pagamento Seguro</p>
+              <p className="text-[10px] text-gray-500">M-Pesa, e-Mola</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center shrink-0">
+              <Zap className="text-yellow-600" size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-900">Preços em MT</p>
+              <p className="text-[10px] text-gray-500">Sem surpresas</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center shrink-0">
+              <HeadphonesIcon className="text-purple-600" size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-900">Suporte</p>
+              <p className="text-[10px] text-gray-500">{settings.support_phone || "24/7"}</p>
+            </div>
+          </div>
         </div>
-        <p className="text-white/80 mb-4">
-          Descontos incríveis por tempo limitado
-        </p>
+
+        {/* Mobile Categories - Scrollable */}
+        <div className="lg:hidden overflow-x-auto pb-4 no-scrollbar">
+          <div className="flex gap-4 min-w-max">
+            {categories.slice(0, 12).map((cat) => {
+              const IconComp = categoryIcons[cat.icon || ""] || ShoppingBag;
+              return (
+                <Link
+                  key={cat.id}
+                  href={`/category/${cat.slug}`}
+                  className="flex flex-col items-center gap-1.5 w-16 group"
+                >
+                  <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center group-hover:bg-yellow-100 group-hover:scale-110 transition-all">
+                    <IconComp size={20} className="text-yellow-600" />
+                  </div>
+                  <span className="text-[10px] text-gray-700 text-center leading-tight font-medium">
+                    {cat.name.split(" ")[0]}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Flash Deals Banner */}
+        <div className="my-6 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 rounded-2xl p-5 md:p-6 text-white relative overflow-hidden">
+          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-black/20 to-transparent" />
+          <div className="relative flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+              <Flame size={24} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                Super Ofertas
+                <Clock size={16} className="animate-pulse" />
+              </h2>
+              <p className="text-white/80 text-sm">Descontos até 50% por tempo limitado</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Tabs - AliExpress style */}
+        <div className="mb-6">
+          <div className="flex items-center gap-1 border-b">
+            <button
+              onClick={() => setActiveTab("featured")}
+              className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "featured"
+                  ? "border-yellow-500 text-yellow-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Star size={14} className="inline mr-1" />
+              Em Destaque
+            </button>
+            <button
+              onClick={() => setActiveTab("new")}
+              className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "new"
+                  ? "border-yellow-500 text-yellow-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Zap size={14} className="inline mr-1" />
+              Novidades
+            </button>
+            <button
+              onClick={() => setActiveTab("recommended")}
+              className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "recommended"
+                  ? "border-yellow-500 text-yellow-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <HeadphonesIcon size={14} className="inline mr-1" />
+              Para Si
+            </button>
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {(activeTab === "featured"
+            ? featuredProducts
+            : activeTab === "new"
+            ? newProducts
+            : recommendations.length > 0
+            ? recommendations
+            : newProducts
+          ).map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+
+        {/* Load more */}
+        <div className="text-center py-8">
+          <Link
+            href={`/search?sort=${activeTab === "new" ? "newest" : "popular"}`}
+            className="inline-flex items-center gap-2 px-8 py-3 bg-white border-2 border-yellow-500 text-yellow-600 rounded-full font-medium hover:bg-yellow-50 transition-colors"
+          >
+            Ver mais produtos
+            <ChevronRight size={16} />
+          </Link>
+        </div>
+
+        {/* Newsletter */}
+        <NewsletterSection />
       </div>
-
-      {/* New Arrivals */}
-      <FeaturedProducts
-        title="Novos Produtos"
-        products={newProducts}
-        viewAllLink="/search?sort=newest"
-      />
-
-      {/* Personalized Recommendations */}
-      {recommendations.length > 0 && (
-        <FeaturedProducts
-          title="Recomendados Para Si"
-          products={recommendations}
-          viewAllLink="/search?sort=popular"
-        />
-      )}
-
-      {/* Newsletter / Promo section */}
-      <NewsletterSection />
     </div>
   );
 }
@@ -117,10 +242,8 @@ function NewsletterSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-
     setLoading(true);
     setMessage("");
-
     try {
       const res = await fetch("/api/newsletter", {
         method: "POST",
@@ -131,19 +254,19 @@ function NewsletterSection() {
       setMessage(data.message || data.error);
       if (res.ok) setEmail("");
     } catch {
-      setMessage("Erro ao processar. Tente novamente.");
+      setMessage("Erro ao processar.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="my-12 bg-yellow-50 rounded-2xl p-8 text-center">
-      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+    <div className="my-10 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 text-center border border-yellow-100">
+      <h3 className="text-xl font-bold text-gray-900 mb-2">
         Receba ofertas exclusivas
       </h3>
-      <p className="text-gray-600 mb-6">
-        Subscreva para receber notificações de promoções e novos produtos
+      <p className="text-gray-600 text-sm mb-5">
+        Subscreva e receba promoções e novos produtos no seu email
       </p>
       <form onSubmit={handleSubmit} className="flex max-w-md mx-auto gap-2">
         <input
@@ -152,12 +275,12 @@ function NewsletterSection() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          className="flex-1 px-4 py-3 rounded-full border focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
         />
         <button
           type="submit"
           disabled={loading}
-          className="bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          className="bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white px-6 py-3 rounded-full font-medium transition-colors text-sm"
         >
           {loading ? "..." : "Subscrever"}
         </button>

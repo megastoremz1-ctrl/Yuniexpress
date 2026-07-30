@@ -3,17 +3,11 @@ import HomePageClient from "./HomePageClient";
 
 async function getHomeData() {
   try {
-    const [banners, featuredProducts, newProducts, categories] = await Promise.all([
+    const [banners, featuredProducts, newProducts, categories, settings] = await Promise.all([
       prisma.banner.findMany({
-        where: {
-          active: true,
-          OR: [
-            { startDate: null },
-            { startDate: { lte: new Date() } },
-          ],
-        },
+        where: { active: true },
         orderBy: { order: "asc" },
-        take: 5,
+        take: 8,
       }),
       prisma.product.findMany({
         where: { status: "APPROVED", featured: true },
@@ -25,14 +19,18 @@ async function getHomeData() {
         where: { status: "APPROVED" },
         include: { images: { take: 2, orderBy: { order: "asc" } } },
         orderBy: { createdAt: "desc" },
-        take: 24,
+        take: 30,
       }),
       prisma.category.findMany({
-        where: { featured: true, parentId: null },
+        where: { featured: true },
         orderBy: { order: "asc" },
-        take: 8,
+        take: 16,
       }),
+      prisma.setting.findMany(),
     ]);
+
+    const settingsMap: Record<string, string> = {};
+    settings.forEach((s: any) => { settingsMap[s.key] = s.value; });
 
     const mapProduct = (p: any) => ({
       id: p.id,
@@ -64,14 +62,15 @@ async function getHomeData() {
         image: c.image,
         icon: c.icon,
       })),
+      settings: settingsMap,
     };
   } catch (error) {
-    // Return empty data if database not connected yet
     return {
       banners: [],
       featuredProducts: [],
       newProducts: [],
       categories: [],
+      settings: {},
     };
   }
 }
