@@ -63,18 +63,14 @@ export default function AdminSettingsPage() {
   const handleSyncNow = async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/sync", {
+      const res = await fetch("/api/admin/sync", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-cron-secret": "yuniexpress-cron-secret-mz-2024",
-        },
-        body: JSON.stringify({ type: "all" }),
       });
-      if (res.ok) {
-        toast.success("Sincronização iniciada com sucesso!");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`${data.message} Total: ${data.totalProducts} produtos.`);
       } else {
-        toast.error("Erro na sincronização");
+        toast.error(data.error || "Erro na sincronização");
       }
     } catch (error) {
       toast.error("Erro ao iniciar sincronização");
