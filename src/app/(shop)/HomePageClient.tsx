@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
@@ -20,6 +20,15 @@ export default function HomePageClient({
   newProducts,
   categories,
 }: HomePageClientProps) {
+  const [recommendations, setRecommendations] = useState<ProductCard[]>([]);
+
+  useEffect(() => {
+    // Fetch personalized recommendations
+    fetch("/api/recommendations?limit=12")
+      .then((r) => r.json())
+      .then((d) => setRecommendations(d.products || []))
+      .catch(() => {});
+  }, []);
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Hero Banner */}
@@ -84,6 +93,15 @@ export default function HomePageClient({
         products={newProducts}
         viewAllLink="/search?sort=newest"
       />
+
+      {/* Personalized Recommendations */}
+      {recommendations.length > 0 && (
+        <FeaturedProducts
+          title="Recomendados Para Si"
+          products={recommendations}
+          viewAllLink="/search?sort=popular"
+        />
+      )}
 
       {/* Newsletter / Promo section */}
       <NewsletterSection />

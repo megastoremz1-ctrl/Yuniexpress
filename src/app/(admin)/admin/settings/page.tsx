@@ -133,19 +133,54 @@ export default function AdminSettingsPage() {
               placeholder="Compre Global, Pague Local"
             />
             <div className="md:col-span-2">
-              <Input
-                label="URL do Logo (imagem)"
-                value={settings.store_logo}
-                onChange={(e) => updateSetting("store_logo", e.target.value)}
-                placeholder="https://exemplo.com/logo.png"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Cole o link de uma imagem PNG/SVG. Recomendado: 200x50px com fundo transparente.
-                Use o <a href="https://imgur.com" target="_blank" className="text-yellow-600 underline">Imgur</a> ou <a href="https://imgbb.com" target="_blank" className="text-yellow-600 underline">ImgBB</a> para hospedar.
-              </p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Logo da Loja</label>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={settings.store_logo}
+                    onChange={(e) => updateSetting("store_logo", e.target.value)}
+                    placeholder="URL do logo ou carregue uma imagem..."
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:outline-none"
+                  />
+                </div>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const fd = new FormData();
+                      fd.append("file", file);
+                      fd.append("purpose", "logo");
+                      toast.loading("A carregar logo...");
+                      try {
+                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                        const data = await res.json();
+                        toast.dismiss();
+                        if (data.url) {
+                          updateSetting("store_logo", data.url);
+                          toast.success("Logo carregado!");
+                        } else {
+                          toast.error(data.error || "Erro");
+                        }
+                      } catch {
+                        toast.dismiss();
+                        toast.error("Erro ao carregar");
+                      }
+                    }}
+                  />
+                  <span className="inline-flex items-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                    <Image size={14} />
+                    Upload
+                  </span>
+                </label>
+              </div>
               {settings.store_logo && (
                 <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                  <p className="text-xs text-gray-500 mb-2">Preview do Logo:</p>
                   <img
                     src={settings.store_logo}
                     alt="Logo preview"
