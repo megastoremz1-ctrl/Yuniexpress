@@ -57,6 +57,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
   const handleAddToCart = () => {
     if (product.variants.length > 0 && !selectedVariant) {
+      // Only require variant if there are real variants from AliExpress
       toast.error("Selecione uma opção antes de adicionar ao carrinho");
       return;
     }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { extractVariantsFromTitle } from "@/lib/services/variants";
 import crypto from "crypto";
 
 const APP_KEY = process.env.ALIEXPRESS_APP_KEY || "525112";
@@ -117,7 +116,9 @@ async function syncCategory(keywords: string, categorySlug: string, rate: number
         const slug = generateSlug(p.product_title);
 
         // Extract variants from title
-        const variants = extractVariantsFromTitle(p.product_title, priceMZN);
+        // NOTE: AliExpress Affiliate API only returns 1 SKU per product
+        // Real variants are not available in this API tier
+        // Products show with single real price from AliExpress + margin
 
         await prisma.product.create({
           data: {
@@ -146,16 +147,6 @@ async function syncCategory(keywords: string, categorySlug: string, rate: number
                 ...smallImages.map((url: string, i: number) => ({ url, order: i + 1 })),
               ],
             },
-            ...(variants.length > 0 ? {
-              variants: {
-                create: variants.map((v) => ({
-                  name: v.name,
-                  value: v.value,
-                  priceMZN: v.priceMZN,
-                  stock: v.stock,
-                })),
-              },
-            } : {}),
           },
         });
       }

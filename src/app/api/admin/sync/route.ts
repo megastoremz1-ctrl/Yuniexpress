@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { extractVariantsFromTitle } from "@/lib/services/variants";
 import crypto from "crypto";
 
 const APP_KEY = process.env.ALIEXPRESS_APP_KEY || "525112";
@@ -135,7 +134,8 @@ export async function POST(request: NextRequest) {
               const smallImages: string[] = (p.product_small_image_urls?.string || []).slice(0, 4);
 
               // Extract variants from title
-              const variants = extractVariantsFromTitle(p.product_title, priceMZN);
+              // NOTE: Affiliate API only returns 1 price per product
+              // Products show with real AliExpress price + margin
 
               await prisma.product.create({
                 data: {
@@ -163,16 +163,6 @@ export async function POST(request: NextRequest) {
                       ...smallImages.map((url: string, i: number) => ({ url, order: i + 1 })),
                     ],
                   },
-                  ...(variants.length > 0 ? {
-                    variants: {
-                      create: variants.map((v) => ({
-                        name: v.name,
-                        value: v.value,
-                        priceMZN: v.priceMZN,
-                        stock: v.stock,
-                      })),
-                    },
-                  } : {}),
                 },
               });
             }
