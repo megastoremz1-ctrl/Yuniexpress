@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
-import { CreditCard, MapPin, Phone, Shield } from "lucide-react";
+import { CreditCard, MapPin, Shield } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -14,9 +14,7 @@ export default function CheckoutPage() {
   const { data: session } = useSession();
   const { items, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: address, 2: payment
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
-  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState({
     name: session?.user?.name || "",
     phone: "",
@@ -36,20 +34,39 @@ export default function CheckoutPage() {
   }
 
   if (items.length === 0) {
-    router.push("/cart");
-    return null;
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Carrinho Vazio</h1>
+        <p className="text-gray-500 mb-6">Adicione produtos ao carrinho para finalizar a compra.</p>
+        <Button onClick={() => router.push("/")}>Ver Produtos</Button>
+      </div>
+    );
   }
 
   const handlePlaceOrder = async () => {
+    // Validate address
+    if (!address.name || !address.phone || !address.province || !address.city || !address.address) {
+      toast.error("Preencha todos os campos do endereço");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Create order
+      // Create order with items from Zustand cart
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          addressId: "temp-address", // In production, save address first
-          paymentMethod: `paygo_${paymentMethod}`,
+          items: items.map((item) => ({
+            productId: item.productId,
+            title: item.title,
+            image: item.image,
+            variant: item.variant,
+            quantity: item.quantity,
+            priceMZN: item.priceMZN,
+          })),
+          address,
+          paymentMethod: `paysuite_${paymentMethod}`,
         }),
       });
 
@@ -57,6 +74,7 @@ export default function CheckoutPage() {
 
       if (!orderRes.ok) {
         toast.error(orderData.error || "Erro ao criar encomenda");
+        setLoading(false);
         return;
       }
 
@@ -75,14 +93,15 @@ export default function CheckoutPage() {
       if (payData.success && payData.checkoutUrl) {
         clearCart();
         toast.success("Redirecionando para o pagamento...");
-        // Redirect to PaySuite checkout page
         window.location.href = payData.checkoutUrl;
       } else {
-        toast.success("Encomenda criada! Complete o pagamento manualmente.");
-        router.push(`/account/orders`);
+        // Payment initiation failed but order was created
+        clearCart();
+        toast.success("Encomenda criada! Complete o pagamento na área de encomendas.");
+        router.push("/account/orders");
       }
     } catch (error) {
-      toast.error("Erro ao processar encomenda");
+      toast.error("Erro ao processar encomenda. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -94,7 +113,7 @@ export default function CheckoutPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          {/* Step 1: Address */}
+          {/* Address */}
           <div className="bg-white p-6 rounded-xl border">
             <div className="flex items-center gap-2 mb-4">
               <MapPin size={20} className="text-yellow-500" />
@@ -111,7 +130,7 @@ export default function CheckoutPage() {
                 label="Telemóvel"
                 value={address.phone}
                 onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                placeholder="+258 84 000 0000"
+                placeholder="84XXXXXXX"
                 required
               />
               <Input
@@ -138,7 +157,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Step 2: Payment */}
+          {/* Payment */}
           <div className="bg-white p-6 rounded-xl border">
             <div className="flex items-center gap-2 mb-4">
               <CreditCard size={20} className="text-yellow-500" />
@@ -173,16 +192,6 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </div>
-
-            <div className="mt-4">
-              <Input
-                label="Número de telemóvel para pagamento"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="84XXXXXXX"
-                icon={<Phone size={16} />}
-              />
-            </div>
           </div>
         </div>
 
@@ -193,7 +202,7 @@ export default function CheckoutPage() {
           <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
             {items.map((item) => (
               <div key={item.id} className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden relative shrink-0">
+                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                   {item.image && (
                     <img src={item.image} alt="" className="w-full h-full object-cover" />
                   )}
@@ -236,7 +245,7 @@ export default function CheckoutPage() {
 
           <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
             <Shield size={14} className="text-green-500" />
-            <span>Pagamento 100% seguro</span>
+            <span>Pagamento 100% seguro via PaySuite</span>
           </div>
         </div>
       </div>

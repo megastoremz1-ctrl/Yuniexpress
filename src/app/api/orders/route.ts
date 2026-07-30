@@ -22,13 +22,7 @@ export async function GET(request: NextRequest) {
       prisma.order.findMany({
         where,
         include: {
-          items: {
-            include: {
-              product: {
-                include: { images: { take: 1, orderBy: { order: "asc" } } },
-              },
-            },
-          },
+          items: true,
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
@@ -50,7 +44,7 @@ export async function GET(request: NextRequest) {
         items: order.items.map((item: any) => ({
           id: item.id,
           title: item.title,
-          image: item.image || item.product.images[0]?.url,
+          image: item.image,
           variant: item.variant,
           quantity: item.quantity,
           priceMZN: item.priceMZN,
@@ -63,7 +57,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Create new order
+// Create new order - receives items from client-side cart (Zustand)
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -71,42 +65,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const { addressId, paymentMethod, couponCode } = await request.json();
+    const body = await request.json();
+    const { items, address, paymentMethod, couponCode } = body;
 
-    if (!addressId || !paymentMethod) {
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: "Carrinho vazio" }, { status: 400 });
+    }
+
+    if (!address || !address.name || !address.phone || !address.province || !address.city || !address.address) {
       return NextResponse.json(
-        { error: "Endereço e método de pagamento são obrigatórios" },
+        { error: "Endereço incompleto" },
         { status: 400 }
       );
     }
 
-    // Get cart items
-    const cartItems = await prisma.cartItem.findMany({
-      where: { userId: session.user.id },
-      include: {
-        product: {
-          include: { images: { take: 1, orderBy: { order: "asc" } } },
-        },
+    if (!paymentMethod) {
+      return NextResponse.json(
+        { error: "Método de pagamento é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    // Create or find address
+    const savedAddress = await prisma.address.create({
+      data: {
+        userId: session.user.id,
+        name: address.name,
+        phone: address.phone,
+        province: address.province,
+        city: address.city,
+        district: address.district || "",
+        address: address.address,
+        isDefault: true,
       },
     });
 
-    if (cartItems.length === 0) {
-      return NextResponse.json({ error: "Carrinho vazio" }, { status: 400 });
-    }
-
-    // Calculate totals
+    // Calculate totals from items
     let subtotalMZN = 0;
-    const orderItems = cartItems.map((item: any) => {
-      const total = item.product.priceMZN * item.quantity;
-      subtotalMZN += total;
+    const orderItems = items.map((item: any) => {
+      const itemTotal = item.priceMZN * item.quantity;
+      subtotalMZN += itemTotal;
       return {
         productId: item.productId,
-        title: item.product.title,
-        image: item.product.images[0]?.url || null,
-        variant: item.variant,
+        title: item.title,
+        image: item.image || null,
+        variant: item.variant || null,
         quantity: item.quantity,
-        priceMZN: item.product.priceMZN,
-        totalMZN: total,
+        priceMZN: item.priceMZN,
+        totalMZN: itemTotal,
       };
     });
 
@@ -125,21 +131,22 @@ export async function POST(request: NextRequest) {
         new Date() <= coupon.endDate &&
         (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit)
       ) {
-        if (coupon.type === "PERCENTAGE") {
-          discountMZN = Math.round(subtotalMZN * (coupon.value / 100));
-          if (coupon.maxDiscountMZN) {
-            discountMZN = Math.min(discountMZN, coupon.maxDiscountMZN);
+        if ((!coupon.minOrderMZN || subtotalMZN >= coupon.minOrderMZN)) {
+          if (coupon.type === "PERCENTAGE") {
+            discountMZN = Math.round(subtotalMZN * (coupon.value / 100));
+            if (coupon.maxDiscountMZN) {
+              discountMZN = Math.min(discountMZN, coupon.maxDiscountMZN);
+            }
+          } else {
+            discountMZN = coupon.value;
           }
-        } else {
-          discountMZN = coupon.value;
-        }
-        couponId = coupon.id;
+          couponId = coupon.id;
 
-        // Increment usage
-        await prisma.coupon.update({
-          where: { id: coupon.id },
-          data: { usedCount: { increment: 1 } },
-        });
+          await prisma.coupon.update({
+            where: { id: coupon.id },
+            data: { usedCount: { increment: 1 } },
+          });
+        }
       }
     }
 
@@ -153,7 +160,7 @@ export async function POST(request: NextRequest) {
       data: {
         orderNumber,
         userId: session.user.id,
-        addressId,
+        addressId: savedAddress.id,
         subtotalMZN,
         discountMZN,
         totalMZN,
@@ -164,11 +171,6 @@ export async function POST(request: NextRequest) {
         },
       },
       include: { items: true },
-    });
-
-    // Clear cart
-    await prisma.cartItem.deleteMany({
-      where: { userId: session.user.id },
     });
 
     return NextResponse.json(
