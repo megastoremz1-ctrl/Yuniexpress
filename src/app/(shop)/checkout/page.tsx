@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { CreditCard, MapPin, Shield } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { calculateShipping } from "@/lib/services/shipping";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
@@ -276,11 +277,23 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Envio</span>
-              <span className="text-green-600">Grátis</span>
+              {(() => {
+                const shipping = calculateShipping(subtotal, 1);
+                const cheapest = shipping[0];
+                return cheapest.free ? (
+                  <span className="text-green-600 font-medium">Grátis</span>
+                ) : (
+                  <span>{formatPrice(cheapest.price)} MT</span>
+                );
+              })()}
             </div>
             <div className="flex justify-between border-t pt-2 text-lg font-bold">
               <span>Total</span>
-              <span className="text-red-600">{formatPrice(subtotal)} MT</span>
+              {(() => {
+                const shipping = calculateShipping(subtotal, 1);
+                const shippingCost = shipping[0].free ? 0 : shipping[0].price;
+                return <span className="text-red-600">{formatPrice(subtotal + shippingCost)} MT</span>;
+              })()}
             </div>
           </div>
 
