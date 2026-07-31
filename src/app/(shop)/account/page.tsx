@@ -64,12 +64,22 @@ export default function AccountPage() {
       {/* Profile header */}
       <div className="bg-white rounded-2xl p-6 border mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-            {session.user?.name?.[0] || "U"}
+          <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-2 border-yellow-200">
+            {session.user?.image ? (
+              <img
+                src={session.user.image}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-yellow-500 flex items-center justify-center text-white text-2xl font-bold">
+                {session.user?.name?.[0] || "U"}
+              </div>
+            )}
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{session.user?.name}</h1>
-            <p className="text-sm text-gray-500">{session.user?.email}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 truncate">{session.user?.name}</h1>
+            <p className="text-sm text-gray-500 truncate">{session.user?.email}</p>
           </div>
         </div>
       </div>

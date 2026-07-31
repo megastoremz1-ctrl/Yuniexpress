@@ -66,13 +66,13 @@ export default function Header() {
 
       {/* Main header */}
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 lg:gap-4">
           {/* Mobile menu button */}
           <button
-            className="lg:hidden p-2"
+            className="lg:hidden p-1.5"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
           {/* Logo - uses custom logo from settings or default */}
@@ -93,13 +93,13 @@ export default function Header() {
             <img
               src="/icons/icon-192x192.png"
               alt="YuniExpress"
-              className="h-10 w-10 sm:hidden rounded-lg"
+              className="h-8 w-8 sm:hidden rounded-lg"
             />
           </Link>
 
-          {/* Search bar */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-4">
-            <div className="relative">
+          {/* Search bar - DESKTOP only (inline) */}
+          <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl mx-4">
+            <div className="relative w-full">
               <input
                 type="text"
                 placeholder="Pesquisar produtos..."
@@ -116,8 +116,11 @@ export default function Header() {
             </div>
           </form>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile: spacer (search is in dedicated row below) */}
+          <div className="lg:hidden flex-1" />
+
+          {/* Actions - Desktop */}
+          <div className="hidden lg:flex items-center gap-4">
             {/* Wishlist */}
             <Link
               href="/wishlist"
@@ -144,28 +147,64 @@ export default function Header() {
               )}
             </Link>
 
-            {/* User - always visible */}
+            {/* User */}
             {session?.user ? (
               <Link
                 href="/account"
                 className="flex items-center gap-1.5 p-2 text-gray-600 hover:text-yellow-600 transition-colors"
               >
                 <User size={20} />
-                <span className="text-xs sm:text-sm font-medium max-w-[60px] sm:max-w-[100px] truncate hidden xs:inline">
+                <span className="text-sm font-medium max-w-[100px] truncate">
                   {session.user.name?.split(" ")[0]}
                 </span>
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 <User size={14} />
                 <span>Entrar</span>
               </Link>
             )}
           </div>
+
+          {/* Mobile: Wishlist icon only (cart is in bottom nav) */}
+          <Link
+            href="/wishlist"
+            className="lg:hidden relative p-1.5 text-gray-600"
+          >
+            <Heart size={20} />
+            {wishlistItems.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                {wishlistItems.length}
+              </span>
+            )}
+          </Link>
         </div>
+      </div>
+
+      {/* Mobile search bar - dedicated full-width row */}
+      <div className="lg:hidden border-t bg-white px-4 py-2">
+        <form onSubmit={handleSearch}>
+          <div className="relative">
+            <input
+              id="mobile-search-input"
+              type="text"
+              placeholder="O que procura hoje?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-10 pr-12 text-sm focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:bg-white transition-all placeholder:text-gray-400"
+            />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-2 transition-colors"
+            >
+              <Search size={14} />
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Categories bar */}

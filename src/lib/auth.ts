@@ -46,6 +46,11 @@ providers.push(
         throw new Error("Credenciais inválidas");
       }
 
+      // Check if email is verified
+      if (!user.emailVerified) {
+        throw new Error("Email não verificado. Verifique a sua caixa de entrada.");
+      }
+
       return {
         id: user.id,
         email: user.email,
