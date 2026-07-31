@@ -314,20 +314,29 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             </button>
           </div>
 
-          {/* Shipping info */}
+          {/* Shipping info - real costs */}
           <div className="space-y-3 p-4 bg-white rounded-xl border">
-            <div className="flex items-center gap-3">
-              <Truck size={18} className="text-green-500" />
-              <div>
-                <p className="text-sm font-medium">
-                  {product.freeShipping ? "Frete Grátis" : "Envio para Mocambique"}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Entrega estimada: {product.shippingDays || "15-45 dias"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
+            {(() => {
+              const { calculateShipping } = require("@/lib/services/shipping");
+              const options = calculateShipping(activePrice, quantity);
+              return options.map((opt: any, i: number) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Truck size={18} className={opt.free ? "text-green-500" : "text-blue-500"} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{opt.name}</p>
+                      <span className={`text-sm font-bold ${opt.free ? "text-green-600" : "text-gray-900"}`}>
+                        {opt.free ? "GRÁTIS" : `${opt.price} MT`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Entrega estimada: {opt.days}
+                    </p>
+                  </div>
+                </div>
+              ));
+            })()}
+            <div className="flex items-center gap-3 pt-2 border-t">
               <Shield size={18} className="text-blue-500" />
               <div>
                 <p className="text-sm font-medium">Proteção ao Comprador</p>

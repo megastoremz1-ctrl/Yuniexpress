@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Heart, Star, Truck } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlist";
 import { ProductCard as ProductCardType } from "@/types";
+import { getCheapestShipping } from "@/lib/services/shipping";
 
 interface ProductCardProps {
   product: ProductCardType;
@@ -43,12 +44,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             -{discount}%
           </div>
         )}
-        {product.freeShipping && (
-          <div className="absolute bottom-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Truck size={10} />
-            Frete Grátis
-          </div>
-        )}
+        {(() => {
+          const shipping = getCheapestShipping(product.priceMZN);
+          return (
+            <div className={`absolute bottom-2 left-2 ${shipping.free ? "bg-green-500" : "bg-blue-500"} text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1`}>
+              <Truck size={10} />
+              {shipping.free ? "Frete Grátis" : `Envio ${shipping.price} MT`}
+            </div>
+          );
+        })()}
       </Link>
 
       {/* Wishlist button */}
