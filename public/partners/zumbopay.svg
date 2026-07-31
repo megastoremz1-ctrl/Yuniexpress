@@ -1,6 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
-  <rect x="2" y="10" width="40" height="40" rx="8" fill="#6366F1"/>
-  <path d="M12 35L22 20H32L22 35H32L22 45H12L22 35Z" fill="white" stroke="white" stroke-width="1"/>
-  <text x="48" y="38" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#1F2937">Zumbo</text>
-  <text x="126" y="38" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#6366F1">Pay</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 80" fill="none">
+  <!-- White background -->
+  <rect width="260" height="80" rx="8" fill="white"/>
+  <!-- Geometric Z with square brackets style (orange) -->
+  <!-- Top bracket -->
+  <path d="M20 22H22V18H46V22H48V26H46V22H22V26H20V22Z" fill="#F26522"/>
+  <!-- Z diagonal -->
+  <path d="M42 22L26 54" stroke="#F26522" stroke-width="5" stroke-linecap="square"/>
+  <!-- Bottom bracket -->
+  <path d="M20 54H22V58H46V54H48V50H46V54H22V50H20V54Z" fill="#F26522"/>
+  <!-- Top-left square notch -->
+  <rect x="18" y="16" width="8" height="4" fill="#F26522"/>
+  <rect x="18" y="16" width="4" height="10" fill="#F26522"/>
+  <!-- Top-right square notch -->
+  <rect x="42" y="16" width="8" height="4" fill="#F26522"/>
+  <!-- Bottom-left square notch -->
+  <rect x="18" y="56" width="8" height="4" fill="#F26522"/>
+  <!-- Bottom-right square notch -->
+  <rect x="42" y="56" width="8" height="4" fill="#F26522"/>
+  <rect x="46" y="50" width="4" height="10" fill="#F26522"/>
+  <!-- ZumboPay text in orange -->
+  <text x="58" y="48" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#F26522">ZumboPay</text>
 </svg>
