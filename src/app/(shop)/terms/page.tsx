@@ -67,14 +67,20 @@ export default function TermsPage() {
         </div>
 
         <h2 className="text-lg font-semibold mt-6 mb-3">7. Devoluções e Reembolsos</h2>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 mb-4">
+          <p className="font-semibold mb-1">IMPORTANTE — Reembolso Parcial:</p>
+          <p>O valor do reembolso <strong>NÃO é devolvido na totalidade</strong>. É aplicada uma taxa de dedução correspondente aos custos de processamento e comissões cobradas por terceiros (operadores de pagamento, gateways, processadores de transacções). O valor líquido reembolsado será o montante pago menos as taxas de terceiros já incorridas pela YuniExpress.</p>
+        </div>
         <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
           <li>O cliente pode solicitar reembolso <strong>apenas</strong> nos seguintes casos: (a) produto não entregue após 60 dias da compra; (b) produto significativamente diferente da descrição</li>
           <li>Solicitações de reembolso devem ser efectuadas no prazo máximo de 15 dias após a recepção</li>
           <li>A YuniExpress reserva-se o direito de exigir prova fotográfica ou documental antes de aprovar qualquer reembolso</li>
           <li>Reembolsos são processados pelo mesmo método de pagamento, no prazo de 5-15 dias úteis</li>
+          <li><strong>O reembolso NÃO é integral</strong> — será deduzida uma taxa correspondente às comissões de processamento cobradas por operadores de pagamento (M-Pesa, e-Mola, Visa/Mastercard, ZumboPay e outros terceiros). Estas taxas são não-reembolsáveis e variam entre 3% e 8% do valor da transacção, conforme o método de pagamento utilizado</li>
+          <li>Em caso de reembolso por indisponibilidade de stock (cancelamento pela YuniExpress), a taxa de processamento de terceiros será igualmente deduzida, dado que a transacção original já foi processada e as comissões já foram cobradas à YuniExpress</li>
           <li><strong>Não são aceites devoluções</strong> por arrependimento, mudança de opinião, incompatibilidade de expectativas ou diferenças menores em relação às imagens</li>
           <li>Produtos de higiene pessoal, roupa interior, ou artigos personalizados não são elegíveis para devolução em nenhuma circunstância</li>
-          <li>O valor do reembolso será o valor pago pelo cliente, excluindo quaisquer taxas de processamento cobradas por terceiros</li>
+          <li>A YuniExpress não tem obrigação de absorver custos de terceiros em qualquer cenário de reembolso</li>
         </ul>
 
         <h2 className="text-lg font-semibold mt-6 mb-3">8. Cancelamentos</h2>
