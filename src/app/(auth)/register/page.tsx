@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Package, Mail, Lock, User, Phone } from "lucide-react";
+import { Package, Mail, Lock, User, Phone, CheckSquare } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
@@ -17,6 +17,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,6 +34,11 @@ export default function RegisterPage() {
 
     if (formData.password.length < 6) {
       toast.error("A password deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast.error("Deve aceitar os Termos e Condições");
       return;
     }
 
@@ -53,8 +59,8 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success("Conta criada com sucesso! Faça login.");
-        router.push("/login");
+        toast.success("Conta criada! Verifique o seu email.");
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {
         toast.error(data.error || "Erro ao criar conta");
       }
@@ -139,16 +145,26 @@ export default function RegisterPage() {
             Criar Conta
           </Button>
 
-          <p className="text-xs text-gray-500 text-center mt-4">
-            Ao criar uma conta, concorda com os nossos{" "}
-            <Link href="/terms" className="text-yellow-600 hover:underline">
-              Termos
-            </Link>{" "}
-            e{" "}
-            <Link href="/privacy" className="text-yellow-600 hover:underline">
-              Política de Privacidade
-            </Link>
-          </p>
+          <div className="mt-4">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500"
+              />
+              <span className="text-xs text-gray-500">
+                Li e aceito os{" "}
+                <Link href="/terms" className="text-yellow-600 hover:underline" target="_blank">
+                  Termos e Condições
+                </Link>{" "}
+                e a{" "}
+                <Link href="/privacy" className="text-yellow-600 hover:underline" target="_blank">
+                  Política de Privacidade
+                </Link>
+              </span>
+            </label>
+          </div>
         </form>
 
         {/* Login link */}

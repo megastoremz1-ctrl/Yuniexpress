@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import toast from "react-hot-toast";
-import { Package, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Package, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
@@ -15,10 +15,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setUnverifiedEmail(false);
 
     try {
       const result = await signIn("credentials", {
@@ -28,7 +30,11 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error("Email ou password incorretos");
+        if (result.error.includes("não verificado") || result.error.includes("verificado")) {
+          setUnverifiedEmail(true);
+        } else {
+          toast.error("Email ou password incorretos");
+        }
       } else {
         toast.success("Login efectuado com sucesso!");
         router.push("/");
@@ -59,6 +65,25 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-sm border">
+          {/* Unverified email warning */}
+          {unverifiedEmail && (
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle size={18} className="text-yellow-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-yellow-800 font-medium">Email não verificado</p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  Precisa de confirmar o seu email antes de fazer login.{" "}
+                  <Link
+                    href={`/verify-email?email=${encodeURIComponent(email)}`}
+                    className="text-yellow-800 underline font-medium"
+                  >
+                    Reenviar email de verificação
+                  </Link>
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <Input
               label="Email"

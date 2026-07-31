@@ -9,7 +9,17 @@ export async function GET(request: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, phone: true, image: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      image: true,
+      city: true,
+      province: true,
+      emailVerified: true,
+      createdAt: true,
+    },
   });
 
   return NextResponse.json({ user });
@@ -20,16 +30,27 @@ export async function PUT(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const { name, phone } = await request.json();
+  const { name, phone, city, province, image } = await request.json();
 
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
   if (phone !== undefined) updateData.phone = phone;
+  if (city !== undefined) updateData.city = city;
+  if (province !== undefined) updateData.province = province;
+  if (image !== undefined) updateData.image = image;
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: updateData,
-    select: { id: true, name: true, email: true, phone: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      image: true,
+      city: true,
+      province: true,
+    },
   });
 
   return NextResponse.json({ user, message: "Perfil actualizado com sucesso" });
