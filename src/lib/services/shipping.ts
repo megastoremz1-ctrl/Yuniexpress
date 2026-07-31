@@ -1,109 +1,56 @@
 /**
- * Calculate shipping cost - realistic for China → Mozambique
+ * Shipping is INCLUDED in the product price (hidden from customer)
  * 
- * LÓGICA:
- * - Produtos caros (margem grande) → FRETE GRÁTIS (absorvido na margem)
- * - Produtos baratos (margem pequena) → Cliente paga frete
+ * Formula: Price = (productUSD + shippingUSD) × rate × margin
+ * Customer sees: "Frete Grátis" (because it's already in the price)
  * 
- * Com margem de 25%, o lucro em MT é:
- * - Produto $5 → lucro ~80 MT (não cobre frete)
- * - Produto $20 → lucro ~320 MT (cobre frete standard)
- * - Produto $50+ → lucro ~800+ MT (cobre frete facilmente)
+ * Real shipping costs (China → Mozambique):
+ * - Items < $5: ~$2.5
+ * - Items $5-20: ~$4
+ * - Items $20-50: ~$8
+ * - Items $50-100: ~$15
+ * - Items $100-200: ~$30
+ * - Items $200+: ~$50
  */
 
 export interface ShippingOption {
   name: string;
-  price: number; // in MZN
+  price: number;
   days: string;
   free: boolean;
 }
 
+// Shipping is always "free" for the customer (included in product price)
 export function calculateShipping(productPriceMZN: number, quantity: number = 1): ShippingOption[] {
-  const totalValue = productPriceMZN * quantity;
-
-  // Produtos acima de 1500 MT (~$18+): FRETE GRÁTIS
-  // Margem de 25% = ~375+ MT de lucro, cobre frete real ($3-5)
-  if (totalValue >= 1500) {
-    return [
-      {
-        name: "Envio Standard Grátis",
-        price: 0,
-        days: "20-40 dias",
-        free: true,
-      },
-      {
-        name: "Envio Expresso",
-        price: Math.ceil(totalValue * 0.05), // 5% para expresso
-        days: "10-18 dias",
-        free: false,
-      },
-    ];
-  }
-
-  // Produtos 800-1500 MT (~$10-18): Frete baixo
-  // Margem = 200-375 MT, frete real ~$3 = 190 MT
-  if (totalValue >= 800) {
-    return [
-      {
-        name: "Envio Standard",
-        price: 99,
-        days: "25-40 dias",
-        free: false,
-      },
-      {
-        name: "Envio Rápido",
-        price: 299,
-        days: "12-20 dias",
-        free: false,
-      },
-    ];
-  }
-
-  // Produtos 400-800 MT (~$5-10): Frete médio
-  // Margem = 100-200 MT, não cobre frete
-  if (totalValue >= 400) {
-    return [
-      {
-        name: "Envio Standard",
-        price: 149,
-        days: "30-45 dias",
-        free: false,
-      },
-      {
-        name: "Envio Rápido",
-        price: 349,
-        days: "15-25 dias",
-        free: false,
-      },
-    ];
-  }
-
-  // Produtos < 400 MT (< $5): Frete proporcional
-  // Margem muito pequena, cliente paga frete
   return [
     {
-      name: "Envio Standard",
-      price: 199,
-      days: "30-50 dias",
-      free: false,
-    },
-    {
-      name: "Envio Rápido",
-      price: 399,
-      days: "15-25 dias",
-      free: false,
+      name: "Envio Standard para Moçambique",
+      price: 0,
+      days: "15-40 dias",
+      free: true,
     },
   ];
 }
 
-// Get the cheapest shipping option
 export function getCheapestShipping(productPriceMZN: number, quantity: number = 1): ShippingOption {
-  const options = calculateShipping(productPriceMZN, quantity);
-  return options[0];
+  return {
+    name: "Envio Standard para Moçambique",
+    price: 0,
+    days: "15-40 dias",
+    free: true,
+  };
 }
 
-// Format shipping for display
+// Estimate shipping cost in USD (used internally for pricing)
+export function estimateShippingUSD(priceUSD: number): number {
+  if (priceUSD < 5) return 2.5;
+  if (priceUSD < 20) return 4;
+  if (priceUSD < 50) return 8;
+  if (priceUSD < 100) return 15;
+  if (priceUSD < 200) return 30;
+  return 50;
+}
+
 export function formatShipping(option: ShippingOption): string {
-  if (option.free) return "Frete Grátis";
-  return `${option.price} MT`;
+  return "Frete Grátis";
 }

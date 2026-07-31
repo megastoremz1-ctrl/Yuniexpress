@@ -47,6 +47,16 @@ export async function GET(request: NextRequest) {
     const marginSetting = await prisma.setting.findUnique({ where: { key: "default_margin_percent" } });
     const margin = marginSetting ? parseFloat(marginSetting.value) : 25;
 
+    // Estimate shipping cost based on product price
+    function estimateShipping(priceUSD: number): number {
+      if (priceUSD < 5) return 2.5;
+      if (priceUSD < 20) return 4;
+      if (priceUSD < 50) return 8;
+      if (priceUSD < 100) return 15;
+      if (priceUSD < 200) return 30;
+      return 50;
+    }
+
     // Search AliExpress
     const params: Record<string, string> = {
       method: "aliexpress.affiliate.product.query",
@@ -81,8 +91,9 @@ export async function GET(request: NextRequest) {
     const products = aliProducts.map((p: any) => {
       const priceUSD = parseFloat(p.target_sale_price || p.original_price || "0");
       const originalUSD = parseFloat(p.target_original_price || p.original_price || priceUSD.toString());
-      const priceMZN = Math.ceil(priceUSD * rate * (1 + margin / 100));
-      const originalMZN = originalUSD > priceUSD ? Math.ceil(originalUSD * rate * (1 + margin / 100)) : null;
+      const shippingUSD = estimateShipping(priceUSD);
+      const priceMZN = Math.ceil((priceUSD + shippingUSD) * rate * (1 + margin / 100));
+      const originalMZN = originalUSD > priceUSD ? Math.ceil((originalUSD + shippingUSD) * rate * (1 + margin / 100)) : null;
 
       return {
         id: `ali-${p.product_id}`,
@@ -105,8 +116,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Auto-save new products to DB (async, don't wait)
-    saveProductsToDb(aliProducts, rate, margin).catch(() => {});
+    // Save new products to DB SYNCHRONOUSLY (so they exist when user clicks)
+    await saveProductsToDb(aliProducts, rate, margin);
 
     const totalResults = data?.aliexpress_affiliate_product_query_response?.resp_result?.result?.total_record_count || 0;
 
@@ -134,8 +145,9 @@ async function saveProductsToDb(aliProducts: any[], rate: number, margin: number
       const originalUSD = parseFloat(p.target_original_price || priceUSD.toString());
       if (priceUSD <= 0) continue;
 
-      const priceMZN = Math.ceil(priceUSD * rate * (1 + margin / 100));
-      const originalMZN = originalUSD > priceUSD ? Math.ceil(originalUSD * rate * (1 + margin / 100)) : null;
+      const shippingUSD = priceUSD < 5 ? 2.5 : priceUSD < 20 ? 4 : priceUSD < 50 ? 8 : priceUSD < 100 ? 15 : priceUSD < 200 ? 30 : 50;
+      const priceMZN = Math.ceil((priceUSD + shippingUSD) * rate * (1 + margin / 100));
+      const originalMZN = originalUSD > priceUSD ? Math.ceil((originalUSD + shippingUSD) * rate * (1 + margin / 100)) : null;
       const mainImage = p.product_main_image_url || "";
       const smallImages: string[] = (p.product_small_image_urls?.string || []).slice(0, 4);
 
