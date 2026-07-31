@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <rect x="2" y="12" width="36" height="36" rx="8" fill="#10B981"/>
+  <path d="M14 30 L22 22 L30 30 L22 38 Z" fill="white"/>
+  <circle cx="22" cy="30" r="4" fill="#10B981"/>
+  <text x="44" y="36" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2937">Pay</text>
+  <text x="78" y="36" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#10B981">Suite</text>
+</svg>

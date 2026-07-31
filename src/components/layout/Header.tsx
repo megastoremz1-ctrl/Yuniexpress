@@ -10,6 +10,14 @@ import {
   User,
   Menu,
   X,
+  ChevronRight,
+  Smartphone,
+  Shirt,
+  Home as HomeIcon,
+  Sparkles,
+  Dumbbell,
+  Gamepad2,
+  Car,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
@@ -35,29 +43,41 @@ export default function Header() {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+      setMobileMenuOpen(false);
     }
   };
 
   const announcementActive = settings.announcement_active === "true" && settings.announcement_bar;
 
+  const mobileCategories = [
+    { href: "/category/electronics", label: "Electrónica", icon: Smartphone },
+    { href: "/category/fashion", label: "Moda", icon: Shirt },
+    { href: "/category/home", label: "Casa & Jardim", icon: HomeIcon },
+    { href: "/category/beauty", label: "Beleza & Saúde", icon: Sparkles },
+    { href: "/category/sports", label: "Desporto", icon: Dumbbell },
+    { href: "/category/toys", label: "Brinquedos", icon: Gamepad2 },
+    { href: "/category/automotive", label: "Automóveis", icon: Car },
+    { href: "/category/phones", label: "Telemóveis", icon: Smartphone },
+  ];
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
       {/* Announcement bar */}
       {announcementActive && (
-        <div className="bg-yellow-500 text-black text-xs py-1.5 text-center font-medium">
+        <div className="bg-yellow-500 text-black text-xs py-1.5 text-center font-medium px-4 truncate">
           {settings.announcement_bar}
         </div>
       )}
 
-      {/* Top bar */}
-      <div className="bg-gray-900 text-white text-xs py-1.5">
+      {/* Top bar - hidden on mobile */}
+      <div className="hidden md:block bg-gray-900 text-white text-xs py-1.5">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <span>Entrega em Mocambique | Pagamento em Meticais</span>
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/account/orders" className="hover:text-yellow-400">
-              Minhas Encomendas
+          <span className="text-gray-300">Entrega em Moçambique | Pagamento em Meticais</span>
+          <div className="flex items-center gap-4">
+            <Link href="/account/orders" className="hover:text-yellow-400 transition-colors">
+              Rastrear Encomenda
             </Link>
-            <Link href="/help" className="hover:text-yellow-400">
+            <Link href="/help" className="hover:text-yellow-400 transition-colors">
               Ajuda
             </Link>
           </div>
@@ -65,118 +85,125 @@ export default function Header() {
       </div>
 
       {/* Main header */}
-      <div className="container mx-auto px-4 py-3">
+      <div className="container mx-auto px-4 py-2.5 lg:py-3">
         <div className="flex items-center gap-3 lg:gap-4">
           {/* Mobile menu button */}
           <button
-            className="lg:hidden p-1.5"
+            className="lg:hidden p-1.5 -ml-1 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menu"
           >
             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
-          {/* Logo - uses custom logo from settings or default */}
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             {settings.store_logo ? (
               <img
                 src={settings.store_logo}
                 alt={settings.store_name || "YuniExpress"}
-                className="h-10 w-auto hidden sm:block"
+                className="h-9 lg:h-10 w-auto"
               />
             ) : (
-              <img
-                src="/images/logo.png"
-                alt="YuniExpress"
-                className="h-10 w-auto hidden sm:block"
-              />
+              <>
+                <img
+                  src="/images/logo.png"
+                  alt="YuniExpress"
+                  className="h-9 lg:h-10 w-auto hidden sm:block"
+                />
+                <img
+                  src="/icons/icon-192x192.png"
+                  alt="YuniExpress"
+                  className="h-8 w-8 sm:hidden rounded-lg"
+                />
+              </>
             )}
-            <img
-              src="/icons/icon-192x192.png"
-              alt="YuniExpress"
-              className="h-8 w-8 sm:hidden rounded-lg"
-            />
           </Link>
 
-          {/* Search bar - DESKTOP only (inline) */}
-          <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-2xl mx-4">
+          {/* Search bar - Desktop (inline) */}
+          <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-xl mx-6">
             <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Pesquisar produtos..."
+                placeholder="Pesquisar produtos, marcas e mais..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border-2 border-yellow-500 rounded-full py-2.5 pl-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500/30"
+                className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:bg-white transition-all placeholder:text-gray-400"
               />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <button
                 type="submit"
-                className="absolute right-1 top-1 bottom-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full px-4 transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-2 transition-colors shadow-sm"
               >
-                <Search size={18} />
+                <Search size={14} />
               </button>
             </div>
           </form>
 
-          {/* Mobile: spacer (search is in dedicated row below) */}
+          {/* Mobile: spacer */}
           <div className="lg:hidden flex-1" />
 
           {/* Actions - Desktop */}
-          <div className="hidden lg:flex items-center gap-4">
-            {/* Wishlist */}
+          <div className="hidden lg:flex items-center gap-1">
             <Link
               href="/wishlist"
-              className="relative p-2 text-gray-600 hover:text-yellow-600 transition-colors"
+              className="relative p-2.5 text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all"
             >
-              <Heart size={22} />
+              <Heart size={21} />
               {wishlistItems.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                   {wishlistItems.length}
                 </span>
               )}
             </Link>
 
-            {/* Cart */}
             <Link
               href="/cart"
-              className="relative p-2 text-gray-600 hover:text-yellow-600 transition-colors"
+              className="relative p-2.5 text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 rounded-full transition-all"
             >
-              <ShoppingCart size={22} />
+              <ShoppingCart size={21} />
               {totalCartItems > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-yellow-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                <span className="absolute top-1 right-0.5 bg-yellow-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold px-1">
                   {totalCartItems}
                 </span>
               )}
             </Link>
 
-            {/* User */}
+            <div className="w-px h-6 bg-gray-200 mx-1" />
+
             {session?.user ? (
               <Link
                 href="/account"
-                className="flex items-center gap-1.5 p-2 text-gray-600 hover:text-yellow-600 transition-colors"
+                className="flex items-center gap-2 py-2 px-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
               >
-                <User size={20} />
-                <span className="text-sm font-medium max-w-[100px] truncate">
+                <div className="w-7 h-7 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-yellow-700">
+                    {session.user.name?.[0]?.toUpperCase() || "U"}
+                  </span>
+                </div>
+                <span className="text-sm font-medium max-w-[80px] truncate">
                   {session.user.name?.split(" ")[0]}
                 </span>
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm"
               >
-                <User size={14} />
+                <User size={15} />
                 <span>Entrar</span>
               </Link>
             )}
           </div>
 
-          {/* Mobile: Wishlist icon only (cart is in bottom nav) */}
+          {/* Mobile: Wishlist only */}
           <Link
             href="/wishlist"
-            className="lg:hidden relative p-1.5 text-gray-600"
+            className="lg:hidden relative p-1.5 text-gray-600 hover:text-yellow-600 transition-colors"
           >
             <Heart size={20} />
             {wishlistItems.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
                 {wishlistItems.length}
               </span>
             )}
@@ -184,8 +211,8 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile search bar - dedicated full-width row */}
-      <div className="lg:hidden border-t bg-white px-4 py-2">
+      {/* Mobile search bar - dedicated row */}
+      <div className="lg:hidden border-t border-gray-100 bg-white px-4 py-2">
         <form onSubmit={handleSearch}>
           <div className="relative">
             <input
@@ -199,7 +226,7 @@ export default function Header() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <button
               type="submit"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-2 transition-colors"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-2 transition-colors shadow-sm"
             >
               <Search size={14} />
             </button>
@@ -207,39 +234,119 @@ export default function Header() {
         </form>
       </div>
 
-      {/* Categories bar */}
-      <nav className="hidden lg:block border-t bg-gray-50">
+      {/* Categories bar - Desktop */}
+      <nav className="hidden lg:block border-t bg-gray-50/80">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-6 py-2 text-sm">
-            <Link href="/category/electronics" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Electrónica</Link>
-            <Link href="/category/fashion" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Moda</Link>
-            <Link href="/category/home" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Casa & Jardim</Link>
-            <Link href="/category/beauty" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Beleza & Saúde</Link>
-            <Link href="/category/sports" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Desporto</Link>
-            <Link href="/category/toys" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Brinquedos</Link>
-            <Link href="/category/automotive" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Automóveis</Link>
-            <Link href="/category/phones" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors">Telemóveis</Link>
+            <Link href="/category/electronics" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Electrónica</Link>
+            <Link href="/category/fashion" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Moda</Link>
+            <Link href="/category/home" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Casa & Jardim</Link>
+            <Link href="/category/beauty" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Beleza & Saúde</Link>
+            <Link href="/category/sports" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Desporto</Link>
+            <Link href="/category/toys" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Brinquedos</Link>
+            <Link href="/category/automotive" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Automóveis</Link>
+            <Link href="/category/phones" className="text-gray-700 hover:text-yellow-600 font-medium transition-colors whitespace-nowrap">Telemóveis</Link>
           </div>
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu - slide overlay */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t shadow-lg z-50">
-          <div className="container mx-auto px-4 py-4 space-y-3">
-            {!session?.user && (
-              <Link href="/login" className="block w-full text-center bg-yellow-500 text-white py-2.5 rounded-lg font-medium">
-                Entrar / Registar
-              </Link>
-            )}
-            <Link href="/category/electronics" className="block py-2 text-gray-700">Electrónica</Link>
-            <Link href="/category/fashion" className="block py-2 text-gray-700">Moda</Link>
-            <Link href="/category/home" className="block py-2 text-gray-700">Casa & Jardim</Link>
-            <Link href="/category/beauty" className="block py-2 text-gray-700">Beleza & Saúde</Link>
-            <Link href="/category/sports" className="block py-2 text-gray-700">Desporto</Link>
-            <Link href="/account/orders" className="block py-2 text-gray-700">Minhas Encomendas</Link>
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden fixed inset-0 bg-black/30 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Menu panel */}
+          <div className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white z-50 shadow-2xl overflow-y-auto animate-fade-in">
+            {/* Menu header */}
+            <div className="bg-gray-900 text-white p-5 pb-6">
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="absolute top-4 right-4 text-white/70 hover:text-white"
+              >
+                <X size={22} />
+              </button>
+              {session?.user ? (
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold">
+                    {session.user.name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{session.user.name}</p>
+                    <p className="text-xs text-gray-400">{session.user.email}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <p className="font-semibold text-sm mb-3">Bem-vindo à YuniExpress</p>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="inline-block bg-yellow-500 text-black px-4 py-2 rounded-lg text-sm font-medium"
+                  >
+                    Entrar / Registar
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Categories */}
+            <div className="p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Categorias
+              </p>
+              <div className="space-y-0.5">
+                {mobileCategories.map((cat) => (
+                  <Link
+                    key={cat.href}
+                    href={cat.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                  >
+                    <cat.icon size={18} className="text-gray-400" />
+                    <span className="text-sm font-medium flex-1">{cat.label}</span>
+                    <ChevronRight size={14} className="text-gray-300" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-gray-100 mx-4" />
+
+            {/* Quick links */}
+            <div className="p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Links Rápidos
+              </p>
+              <div className="space-y-0.5">
+                <Link
+                  href="/account/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-2.5 px-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700 font-medium"
+                >
+                  Minhas Encomendas
+                </Link>
+                <Link
+                  href="/help"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-2.5 px-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700 font-medium"
+                >
+                  Centro de Ajuda
+                </Link>
+                <Link
+                  href="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-2.5 px-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700 font-medium"
+                >
+                  Sobre Nós
+                </Link>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );

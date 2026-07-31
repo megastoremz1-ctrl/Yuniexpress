@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { User, Save, Check, Camera, MapPin, Phone, Loader2 } from "lucide-react";
+import { User, Save, Check, Camera, MapPin, Phone, Loader2, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -34,6 +34,7 @@ export default function AccountSettingsPage() {
     city: "",
     province: "",
     image: "",
+    birthdate: "",
   });
 
   useEffect(() => {
@@ -47,6 +48,9 @@ export default function AccountSettingsPage() {
             city: d.user.city || "",
             province: d.user.province || "",
             image: d.user.image || "",
+            birthdate: d.user.birthdate
+              ? new Date(d.user.birthdate).toISOString().split("T")[0]
+              : "",
           });
         }
       })
@@ -66,6 +70,7 @@ export default function AccountSettingsPage() {
           phone: form.phone,
           city: form.city,
           province: form.province,
+          birthdate: form.birthdate || null,
         }),
       });
       if (res.ok) {
@@ -86,7 +91,6 @@ export default function AccountSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate on client side
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       toast.error("Use ficheiros JPG, PNG ou WebP");
       return;
@@ -120,6 +124,17 @@ export default function AccountSettingsPage() {
     }
   };
 
+  // Calculate age from birthdate
+  const getAge = () => {
+    if (!form.birthdate) return null;
+    const today = new Date();
+    const birth = new Date(form.birthdate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
   if (loadingProfile) {
     return (
       <div className="container mx-auto px-4 py-16 flex justify-center">
@@ -128,12 +143,14 @@ export default function AccountSettingsPage() {
     );
   }
 
+  const age = getAge();
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-2xl">
       <h1 className="text-xl font-bold text-gray-900 mb-6">Configurações da Conta</h1>
 
       {/* Profile Photo Section */}
-      <div className="bg-white p-6 rounded-xl border mb-6">
+      <div className="bg-white p-6 rounded-xl border mb-4">
         <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Camera size={18} className="text-yellow-500" /> Foto de Perfil
         </h2>
@@ -179,7 +196,7 @@ export default function AccountSettingsPage() {
       </div>
 
       {/* Personal Data Section */}
-      <div className="bg-white p-6 rounded-xl border mb-6">
+      <div className="bg-white p-6 rounded-xl border mb-4">
         <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <User size={18} className="text-yellow-500" /> Dados Pessoais
         </h2>
@@ -208,11 +225,32 @@ export default function AccountSettingsPage() {
             placeholder="+258 84/85/86/87 XXXXXXX"
             icon={<Phone size={16} />}
           />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Data de Nascimento
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                value={form.birthdate}
+                onChange={(e) => setForm({ ...form, birthdate: e.target.value })}
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18))
+                  .toISOString()
+                  .split("T")[0]}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:outline-none transition-all"
+              />
+            </div>
+            {age !== null && (
+              <p className="text-xs text-gray-400 mt-1">
+                {age} anos de idade
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Location Section */}
-      <div className="bg-white p-6 rounded-xl border mb-6">
+      <div className="bg-white p-6 rounded-xl border mb-4">
         <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <MapPin size={18} className="text-yellow-500" /> Localização
         </h2>
@@ -243,7 +281,7 @@ export default function AccountSettingsPage() {
       </div>
 
       {/* Save Button */}
-      <div className="sticky bottom-4">
+      <div className="sticky bottom-20 lg:bottom-4">
         <Button onClick={handleSave} loading={loading} fullWidth size="lg">
           {saved ? (
             <>
