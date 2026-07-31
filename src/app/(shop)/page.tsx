@@ -1,24 +1,22 @@
 import { prisma } from "@/lib/db";
 import HomePageClient from "./HomePageClient";
 
+// Never cache - always fresh shuffle on every request
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function getHomeData() {
   try {
-    const [banners, featuredProducts, newProducts, categories, settings] = await Promise.all([
+    const [banners, allProducts, categories, settings] = await Promise.all([
       prisma.banner.findMany({
         where: { active: true },
         orderBy: { order: "asc" },
         take: 8,
       }),
       prisma.product.findMany({
-        where: { status: "APPROVED", featured: true },
-        include: { images: { take: 2, orderBy: { order: "asc" } } },
-        orderBy: { createdAt: "desc" },
-        take: 24,
-      }),
-      prisma.product.findMany({
         where: { status: "APPROVED" },
         include: { images: { take: 2, orderBy: { order: "asc" } } },
-        take: 60,
+        take: 200, // Get a big pool to shuffle from
       }),
       prisma.category.findMany({
         where: { featured: true },
@@ -44,15 +42,12 @@ async function getHomeData() {
       images: p.images.map((img: any) => ({ url: img.url, alt: img.alt })),
     });
 
-    // Shuffle products to mix categories
-    const shuffle = (arr: any[]) => {
-      const shuffled = [...arr];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    };
+    // Shuffle all products randomly
+    const shuffled = [...allProducts].sort(() => Math.random() - 0.5);
+
+    // Split into non-overlapping groups
+    const featuredProducts = shuffled.slice(0, 24).map(mapProduct);
+    const newProducts = shuffled.slice(24, 72).map(mapProduct);
 
     return {
       banners: banners.map((b: any) => ({
@@ -62,8 +57,8 @@ async function getHomeData() {
         image: b.image,
         link: b.link,
       })),
-      featuredProducts: shuffle(featuredProducts.map(mapProduct)),
-      newProducts: shuffle(newProducts.map(mapProduct)),
+      featuredProducts,
+      newProducts,
       categories: categories.map((c: any) => ({
         id: c.id,
         name: c.name,
