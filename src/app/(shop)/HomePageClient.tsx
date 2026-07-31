@@ -37,6 +37,14 @@ export default function HomePageClient({
   const [recommendations, setRecommendations] = useState<ProductCardType[]>([]);
   const [activeTab, setActiveTab] = useState<"featured" | "new" | "recommended">("featured");
 
+  // Shuffle products client-side (each visitor sees different order, no extra DB queries)
+  const [shuffledFeatured] = useState(() =>
+    [...featuredProducts].sort(() => Math.random() - 0.5)
+  );
+  const [shuffledNew] = useState(() =>
+    [...newProducts].sort(() => Math.random() - 0.5)
+  );
+
   useEffect(() => {
     fetch("/api/recommendations?limit=12")
       .then((r) => r.json())
@@ -184,12 +192,12 @@ export default function HomePageClient({
         {/* Products Grid - tight and clean */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {(activeTab === "featured"
-            ? featuredProducts
+            ? shuffledFeatured
             : activeTab === "new"
-            ? newProducts
+            ? shuffledNew
             : recommendations.length > 0
             ? recommendations
-            : newProducts
+            : shuffledNew
           ).map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

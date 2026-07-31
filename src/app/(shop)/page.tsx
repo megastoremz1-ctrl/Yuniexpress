@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import HomePageClient from "./HomePageClient";
 
-// Cache for 60 seconds - reduces DB queries by 99% while still shuffling
-export const revalidate = 60;
+// Cache for 5 minutes - shuffle happens client-side (each visitor sees different order)
+export const revalidate = 300;
 
 async function getHomeData() {
   try {
@@ -53,17 +53,17 @@ async function getHomeData() {
       images: Array.isArray(p.images) ? p.images.map((img: any) => ({ url: img.url, alt: img.alt })) : [],
     });
 
-    // Shuffle products
-    const shuffled = Array.isArray(allProducts) && allProducts.length > 0
-      ? [...allProducts].sort(() => Math.random() - 0.5)
+    // Don't shuffle server-side - client does it for each visitor
+    const allMapped = Array.isArray(allProducts) && allProducts.length > 0
+      ? allProducts.map(mapProduct)
       : [];
 
     return {
       banners: Array.isArray(banners) ? banners.map((b: any) => ({
         id: b.id, title: b.title, subtitle: b.subtitle, image: b.image, link: b.link,
       })) : [],
-      featuredProducts: shuffled.slice(0, 24).map(mapProduct),
-      newProducts: shuffled.slice(24, 72).map(mapProduct),
+      featuredProducts: allMapped.slice(0, 24),
+      newProducts: allMapped.slice(24, 72),
       categories: Array.isArray(categories) ? categories.map((c: any) => ({
         id: c.id, name: c.name, slug: c.slug, image: c.image, icon: c.icon,
       })) : [],
