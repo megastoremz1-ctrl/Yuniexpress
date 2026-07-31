@@ -10,7 +10,7 @@ const partners = [
   },
   {
     name: "ZumboPay",
-    logo: "/partners/zumbopay.svg",
+    logo: "/partners/zumbopay.png",
     url: "https://zumbopay.com",
   },
   {
