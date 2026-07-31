@@ -75,8 +75,8 @@ export default function HomePageClient({
             </nav>
           </aside>
 
-          {/* Main Banner */}
-          <div className="min-h-[300px] md:min-h-[380px]">
+          {/* Main Banner - 1920x700 aspect ratio */}
+          <div className="min-h-[250px] md:min-h-[350px] lg:min-h-[400px]">
             <HeroBanner banners={banners} />
           </div>
         </div>

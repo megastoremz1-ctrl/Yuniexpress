@@ -22,13 +22,13 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
 
   if (banners.length === 0) {
     return (
-      <div className="relative h-[300px] md:h-[400px] bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-2xl overflow-hidden flex items-center justify-center">
-        <div className="text-center text-white">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+      <div className="relative w-full rounded-xl overflow-hidden bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center" style={{ aspectRatio: "1920/700" }}>
+        <div className="text-center text-white p-6">
+          <h2 className="text-2xl md:text-4xl font-bold mb-3">
             Bem-vindo ao YuniExpress
           </h2>
-          <p className="text-lg md:text-xl opacity-90">
-            Produtos internacionais, precos em Meticais
+          <p className="text-base md:text-lg opacity-90">
+            Produtos internacionais, preços em Meticais
           </p>
         </div>
       </div>
@@ -36,7 +36,7 @@ export default function HeroBanner({ banners }: HeroBannerProps) {
   }
 
   return (
-    <div className="relative h-[300px] md:h-[400px] rounded-2xl overflow-hidden">
+    <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: "1920/700" }}>
       {banners.map((banner, index) => (
         <div
           key={banner.id}
