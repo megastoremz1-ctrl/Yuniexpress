@@ -1,11 +1,11 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = `YuniExpress <noreply@yuniexpress.shop>`;
 
 export async function sendWelcomeEmail(email: string, name: string) {
   try {
-    await resend.emails.send({
+    await resend?.emails.send({
       from: FROM,
       to: email,
       subject: "Bem-vindo à YuniExpress! 🎉",
@@ -38,7 +38,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
 
 export async function sendOrderConfirmation(email: string, name: string, orderNumber: string, totalMZN: number) {
   try {
-    await resend.emails.send({
+    await resend?.emails.send({
       from: FROM,
       to: email,
       subject: `Encomenda #${orderNumber} confirmada ✅`,
@@ -67,7 +67,7 @@ export async function sendOrderConfirmation(email: string, name: string, orderNu
 
 export async function sendShippedEmail(email: string, name: string, orderNumber: string, trackingNumber?: string) {
   try {
-    await resend.emails.send({
+    await resend?.emails.send({
       from: FROM,
       to: email,
       subject: `Encomenda #${orderNumber} enviada! 🚚`,
@@ -90,7 +90,7 @@ export async function sendShippedEmail(email: string, name: string, orderNumber:
 
 export async function sendPasswordResetEmail(email: string, resetToken: string) {
   try {
-    await resend.emails.send({
+    await resend?.emails.send({
       from: FROM,
       to: email,
       subject: "Recuperar Password - YuniExpress",
@@ -114,7 +114,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
 
 export async function sendEmailVerification(email: string, name: string, token: string) {
   try {
-    await resend.emails.send({
+    await resend?.emails.send({
       from: FROM,
       to: email,
       subject: "Confirme o seu email - YuniExpress",
