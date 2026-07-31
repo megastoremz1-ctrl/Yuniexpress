@@ -97,3 +97,8 @@ textarea:focus {
 .animate-pulse-yellow {
   animation: pulse-yellow 2s infinite;
 }
+
+/* Safe area for bottom nav on iOS */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
