@@ -2,11 +2,24 @@
 
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
+import { useEffect } from "react";
+import InstallPrompt from "@/components/layout/InstallPrompt";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // Register service worker for PWA
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => console.log("SW registered"))
+        .catch(() => {});
+    }
+  }, []);
+
   return (
     <SessionProvider>
       {children}
+      <InstallPrompt />
       <Toaster
         position="top-right"
         toastOptions={{
