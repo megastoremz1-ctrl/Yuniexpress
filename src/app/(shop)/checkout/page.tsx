@@ -23,6 +23,45 @@ export default function CheckoutPage() {
     district: "",
     address: "",
   });
+  const [addressLoaded, setAddressLoaded] = useState(false);
+
+  // Pre-fill address from user's last order or profile
+  useEffect(() => {
+    if (status === "authenticated" && !addressLoaded) {
+      fetch("/api/orders?limit=1")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.orders && data.orders.length > 0) {
+            // Use last order address
+          }
+        })
+        .catch(() => {});
+
+      // Pre-fill name from session
+      if (session?.user?.name) {
+        setAddress((prev) => ({ ...prev, name: prev.name || session.user?.name || "" }));
+      }
+
+      // Try to get last saved address
+      fetch("/api/user/address")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.address) {
+            setAddress({
+              name: data.address.name || session?.user?.name || "",
+              phone: data.address.phone || "",
+              province: data.address.province || "",
+              city: data.address.city || "",
+              district: data.address.district || "",
+              address: data.address.address || "",
+            });
+          }
+        })
+        .catch(() => {});
+
+      setAddressLoaded(true);
+    }
+  }, [status, session, addressLoaded]);
 
   const subtotal = items.reduce((sum, item) => sum + item.priceMZN * item.quantity, 0);
   const formatPrice = (price: number) =>

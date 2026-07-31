@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       reference: order.orderNumber,
       description: `Pagamento YuniExpress ${order.orderNumber}`,
       method: method || undefined,
-      returnUrl: `${appUrl}/account/orders`,
-      callbackUrl: `${appUrl}/api/payments/callback`,
+      returnUrl: "https://yuniexpressmz.vercel.app/account/orders",
+      callbackUrl: "https://yuniexpressmz.vercel.app/api/payments/callback",
     });
 
     if (payment.success && payment.paymentId) {
