@@ -49,7 +49,7 @@ export default function PrivacyPage() {
         </ul>
 
         <h2 className="text-lg font-semibold mt-6 mb-3">7. Contacto</h2>
-        <p className="text-sm text-gray-700">Para questões sobre privacidade: <strong>suporte@yuniexpress.co.mz</strong> ou <strong>+258 87 100 2255</strong></p>
+        <p className="text-sm text-gray-700">Para questões sobre privacidade: <strong>suporte@yuniexpress.shop</strong> ou <strong>+258 87 100 2255</strong></p>
 
         <h2 className="text-lg font-semibold mt-6 mb-3">8. Alterações</h2>
         <p className="text-sm text-gray-700">Reservamos o direito de actualizar esta política. Notificaremos sobre alterações significativas por email ou notificação no site.</p>

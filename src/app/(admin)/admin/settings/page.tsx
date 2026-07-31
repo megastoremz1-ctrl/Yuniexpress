@@ -11,7 +11,7 @@ export default function AdminSettingsPage() {
     store_name: "YuniExpress",
     store_logo: "",
     store_tagline: "Compre Global, Pague Local",
-    support_email: "suporte@yuniexpress.co.mz",
+    support_email: "suporte@yuniexpress.shop",
     support_phone: "+258 84 000 0000",
     default_margin_percent: "25",
     announcement_bar: "",

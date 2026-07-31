@@ -17,11 +17,11 @@ export default function HelpPage() {
               <p className="text-[10px] text-gray-500">87 100 2255</p>
             </div>
           </a>
-          <a href="mailto:suporte@yuniexpress.co.mz" className="flex items-center gap-2 p-3 bg-white rounded-lg border hover:shadow-sm transition-shadow">
+          <a href="mailto:suporte@yuniexpress.shop" className="flex items-center gap-2 p-3 bg-white rounded-lg border hover:shadow-sm transition-shadow">
             <Mail size={18} className="text-blue-500" />
             <div>
               <p className="text-xs font-medium">Email</p>
-              <p className="text-[10px] text-gray-500">suporte@yuniexpress.co.mz</p>
+              <p className="text-[10px] text-gray-500">suporte@yuniexpress.shop</p>
             </div>
           </a>
           <a href="tel:+258871002255" className="flex items-center gap-2 p-3 bg-white rounded-lg border hover:shadow-sm transition-shadow">

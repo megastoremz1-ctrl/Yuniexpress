@@ -54,14 +54,14 @@ export async function createPayment(
     amount: request.amount.toFixed(2),
     reference: request.reference.replace(/[^a-zA-Z0-9]/g, ""),
     description: (request.description || `Pagamento YuniExpress ${request.reference}`).slice(0, 125),
-    return_url: request.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpressmz.vercel.app"}/account/orders`,
+    return_url: request.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpress.shop"}/account/orders`,
   };
 
   // Add callback URL for webhook
   if (request.callbackUrl) {
     payload.callback_url = request.callbackUrl;
   } else {
-    payload.callback_url = `${process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpressmz.vercel.app"}/api/payments/callback`;
+    payload.callback_url = `${process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpress.shop"}/api/payments/callback`;
   }
 
   // Add method if specified (otherwise PaySuite shows all options)

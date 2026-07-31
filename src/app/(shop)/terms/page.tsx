@@ -77,7 +77,7 @@ export default function TermsPage() {
         <h2 className="text-lg font-semibold mt-6 mb-3">11. Contacto</h2>
         <p className="text-sm text-gray-700">
           <strong>YuniExpress</strong><br />
-          Email: suporte@yuniexpress.co.mz<br />
+          Email: suporte@yuniexpress.shop<br />
           WhatsApp: +258 87 100 2255<br />
           Moçambique
         </p>

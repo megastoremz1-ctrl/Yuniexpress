@@ -14,7 +14,7 @@ export default function Footer() {
       .catch(() => {});
   }, []);
 
-  const email = settings.support_email || "suporte@yuniexpress.co.mz";
+  const email = settings.support_email || "suporte@yuniexpress.shop";
   const phone = settings.support_phone || "+258 87 100 2255";
   const storeName = settings.store_name || "YuniExpress";
 
