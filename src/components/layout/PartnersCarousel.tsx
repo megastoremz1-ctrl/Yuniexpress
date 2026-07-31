@@ -24,6 +24,11 @@ const partners = [
     url: "https://aliexpress.com",
   },
   {
+    name: "M-Pesa",
+    logo: "/partners/mpesa.svg",
+    url: "https://www.vodacom.co.mz/mpesa",
+  },
+  {
     name: "e-Mola",
     logo: "/partners/emola.svg",
     url: "https://emola.movitel.co.mz",

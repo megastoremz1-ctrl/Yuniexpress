@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" fill="none">
+  <!-- White background -->
+  <rect width="280" height="80" rx="8" fill="white"/>
+  <!-- Vodafone red circle (speech mark shape) -->
+  <circle cx="36" cy="40" r="22" fill="#E60000"/>
+  <!-- White apostrophe/speech mark inside circle -->
+  <path d="M32 30C32 30 30 36 30 38C30 40 32 42 34 42C36 42 38 40 38 38C38 36 36 34 34 34C34 34 36 30 38 28" fill="white"/>
+  <!-- Divider line -->
+  <line x1="68" y1="18" x2="68" y2="62" stroke="#E0E0E0" stroke-width="1"/>
+  <!-- Mobile phone icon (red) -->
+  <rect x="78" y="22" width="18" height="32" rx="3" fill="none" stroke="#E60000" stroke-width="2"/>
+  <rect x="80" y="26" width="14" height="20" fill="#E60000" rx="1"/>
+  <!-- Green/red money coming out of phone -->
+  <path d="M92 30L104 26L102 32L108 28L100 38L102 34L96 36Z" fill="#4CAF50"/>
+  <!-- m-pesa text -->
+  <text x="116" y="50" font-family="Arial, sans-serif" font-size="22" font-weight="400" fill="#E60000">m-pesa</text>
+</svg>

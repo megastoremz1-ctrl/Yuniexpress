@@ -1,7 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
-  <rect x="2" y="12" width="36" height="36" rx="8" fill="#10B981"/>
-  <path d="M14 30 L22 22 L30 30 L22 38 Z" fill="white"/>
-  <circle cx="22" cy="30" r="4" fill="#10B981"/>
-  <text x="44" y="36" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2937">Pay</text>
-  <text x="78" y="36" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#10B981">Suite</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" fill="none">
+  <!-- White background -->
+  <rect width="240" height="80" rx="8" fill="white"/>
+  <!-- Green shield/leaf shape -->
+  <path d="M30 20C30 20 24 28 24 40C24 52 30 60 38 60C38 60 50 56 50 40C50 24 38 20 38 20" fill="#2DD4A8"/>
+  <!-- White leaf detail inside -->
+  <path d="M34 35C34 35 36 42 40 46C40 46 38 38 36 34" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- PaySuite text -->
+  <text x="60" y="48" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#1A1A1A">Pay</text>
+  <text x="102" y="48" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#1A1A1A">Suite</text>
 </svg>

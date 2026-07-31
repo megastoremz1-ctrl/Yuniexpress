@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
-  <rect x="2" y="12" width="36" height="36" rx="18" fill="#3B82F6"/>
-  <path d="M15 26 L20 30 L30 22" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <text x="44" y="37" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#1F2937">Pay</text>
-  <text x="82" y="37" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#3B82F6">Go</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" fill="none">
+  <!-- Dark background -->
+  <rect width="240" height="80" rx="8" fill="#0F172A"/>
+  <!-- Blue lightning bolt icon -->
+  <path d="M38 20L28 42H38L32 60L52 36H42L48 20Z" fill="#3B82F6"/>
+  <!-- PayGo text - italic bold white -->
+  <text x="62" y="50" font-family="Arial, sans-serif" font-size="28" font-weight="700" font-style="italic" fill="white">PayGo</text>
 </svg>
