@@ -46,9 +46,9 @@ export default function HomePageClient({
 
   return (
     <div>
-      {/* Hero Section - AliExpress style with sidebar categories */}
-      <div className="container mx-auto px-4 pt-3 pb-2">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-3">
+      {/* Hero Section */}
+      <div className="container mx-auto px-3 pt-3 pb-1">
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-3">
           {/* Category Sidebar - Desktop */}
           <aside className="hidden lg:block bg-white rounded-xl border overflow-hidden">
             <div className="p-3 bg-gray-900 text-white text-sm font-semibold">
@@ -82,44 +82,24 @@ export default function HomePageClient({
         </div>
       </div>
 
-      <div className="container mx-auto px-4">
-        {/* Trust Badges - AliExpress style */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 py-4">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
-            <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center shrink-0">
-              <Truck className="text-green-600" size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-900">Entrega em MZ</p>
-              <p className="text-[10px] text-gray-500">Em todo o país</p>
-            </div>
+      <div className="container mx-auto px-3">
+        {/* Trust Badges */}
+        <div className="grid grid-cols-4 gap-2 py-3">
+          <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+            <Truck className="text-green-600 shrink-0" size={16} />
+            <p className="text-[10px] font-medium text-gray-700 leading-tight">Frete Grátis</p>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
-            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
-              <Shield className="text-blue-600" size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-900">Pagamento Seguro</p>
-              <p className="text-[10px] text-gray-500">M-Pesa, e-Mola</p>
-            </div>
+          <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+            <Shield className="text-blue-600 shrink-0" size={16} />
+            <p className="text-[10px] font-medium text-gray-700 leading-tight">Pagamento Seguro</p>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
-            <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center shrink-0">
-              <Zap className="text-yellow-600" size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-900">Preços em MT</p>
-              <p className="text-[10px] text-gray-500">Sem surpresas</p>
-            </div>
+          <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+            <Zap className="text-yellow-600 shrink-0" size={16} />
+            <p className="text-[10px] font-medium text-gray-700 leading-tight">Preços em MT</p>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white rounded-xl border hover:shadow-sm transition-shadow">
-            <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center shrink-0">
-              <HeadphonesIcon className="text-purple-600" size={18} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-900">Suporte</p>
-              <p className="text-[10px] text-gray-500">{settings.support_phone || "24/7"}</p>
-            </div>
+          <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+            <HeadphonesIcon className="text-purple-600 shrink-0" size={16} />
+            <p className="text-[10px] font-medium text-gray-700 leading-tight">Suporte</p>
           </div>
         </div>
 
@@ -147,7 +127,7 @@ export default function HomePageClient({
         </div>
 
         {/* Flash Deals Banner */}
-        <div className="my-4 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 rounded-xl p-4 md:p-5 text-white relative overflow-hidden">
+        <div className="my-3 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 rounded-lg p-3 text-white relative overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-black/20 to-transparent" />
           <div className="relative flex items-center gap-3">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -202,8 +182,8 @@ export default function HomePageClient({
           </div>
         </div>
 
-        {/* Products Grid - aligned */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+        {/* Products Grid - tight and clean */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {(activeTab === "featured"
             ? featuredProducts
             : activeTab === "new"

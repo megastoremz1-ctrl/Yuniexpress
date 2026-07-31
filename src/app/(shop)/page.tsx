@@ -11,19 +11,28 @@ async function getHomeData() {
       prisma.banner.findMany({
         where: { active: true },
         orderBy: { order: "asc" },
-        take: 8,
+        take: 5,
+        select: { id: true, title: true, subtitle: true, image: true, link: true },
       }),
       prisma.product.findMany({
         where: { status: "APPROVED" },
-        include: { images: { take: 2, orderBy: { order: "asc" } } },
-        take: 200, // Get a big pool to shuffle from
+        select: {
+          id: true, title: true, slug: true, priceMZN: true,
+          originalPriceMZN: true, rating: true, reviewCount: true,
+          sold: true, freeShipping: true,
+          images: { take: 1, orderBy: { order: "asc" }, select: { url: true, alt: true } },
+        },
+        take: 120,
       }),
       prisma.category.findMany({
         where: { featured: true },
         orderBy: { order: "asc" },
-        take: 16,
+        take: 12,
+        select: { id: true, name: true, slug: true, image: true, icon: true },
       }),
-      prisma.setting.findMany(),
+      prisma.setting.findMany({
+        select: { key: true, value: true },
+      }),
     ]);
 
     const settingsMap: Record<string, string> = {};
