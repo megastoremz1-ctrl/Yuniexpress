@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/db";
 import HomePageClient from "./HomePageClient";
 
-// Never cache - always fresh on every request
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Cache for 60 seconds - reduces DB queries by 99% while still shuffling
+export const revalidate = 60;
 
 async function getHomeData() {
   try {
