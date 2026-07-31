@@ -5,7 +5,9 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-import { Package, ChevronRight, Truck, Clock } from "lucide-react";
+import { Package, ChevronRight, Truck, Clock, ShoppingCart } from "lucide-react";
+import { useCartStore } from "@/store/cart";
+import toast from "react-hot-toast";
 
 interface Order {
   id: string;
@@ -59,13 +61,30 @@ export default function OrdersPage() {
     CANCELLED: { label: "Cancelada", color: "bg-red-100 text-red-700" },
   };
 
-  if (loading) {
+  if (status === "loading") {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-yellow-500 border-t-transparent rounded-full" />
       </div>
     );
   }
+
+  const addToCart = useCartStore((s) => s.addItem);
+
+  const restoreToCart = (order: Order) => {
+    order.items.forEach((item) => {
+      addToCart({
+        id: `cart-${item.id}-${Date.now()}`,
+        productId: item.id,
+        title: item.title,
+        image: item.image || "",
+        priceMZN: item.priceMZN,
+        quantity: item.quantity,
+        stock: 100,
+      });
+    });
+    toast.success("Produtos devolvidos ao carrinho!");
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
@@ -130,12 +149,23 @@ export default function OrdersPage() {
                   <span className="text-sm font-bold text-gray-900">
                     Total: {formatPrice(order.totalMZN)} MT
                   </span>
-                  {order.trackingNumber && (
-                    <span className="text-xs text-blue-600 flex items-center gap-1">
-                      <Truck size={12} />
-                      {order.trackingNumber}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {order.trackingNumber && (
+                      <span className="text-xs text-blue-600 flex items-center gap-1">
+                        <Truck size={12} />
+                        {order.trackingNumber}
+                      </span>
+                    )}
+                    {order.status === "CANCELLED" && (
+                      <button
+                        onClick={() => restoreToCart(order)}
+                        className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 transition-colors"
+                      >
+                        <ShoppingCart size={12} />
+                        Restaurar ao Carrinho
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

@@ -106,21 +106,28 @@ export async function PUT(request: NextRequest) {
   if (status === "SHIPPED") updateData.shippedAt = new Date();
   if (status === "DELIVERED") updateData.deliveredAt = new Date();
 
+  if (status === "CANCELLED") updateData.paymentStatus = "FAILED";
+
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: updateData,
+    include: { items: true },
   });
 
   // Send notification to customer
+  const msg = status === "CANCELLED"
+    ? "A sua encomenda foi cancelada. Os itens foram devolvidos ao seu carrinho."
+    : getStatusMessage(status, trackingNumber);
+
   try {
     await sendOrderNotification(order.userId, order.orderNumber, status);
     await prisma.notification.create({
       data: {
         userId: order.userId,
         title: `Encomenda #${order.orderNumber}`,
-        message: getStatusMessage(status, trackingNumber),
+        message: msg,
         type: "order",
-        data: { orderId, status, trackingNumber },
+        data: { orderId, status, trackingNumber, items: status === "CANCELLED" ? updated.items : undefined },
       },
     });
   } catch {}

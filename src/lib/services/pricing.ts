@@ -109,19 +109,21 @@ export async function convertPrice(
 
 // Estimate real shipping cost from China to Mozambique based on product value
 function estimateShippingCost(priceUSD: number): number {
-  // Based on real AliExpress shipping rates to Africa/Mozambique:
-  // - Items < $5: shipping ~$2-3
-  // - Items $5-20: shipping ~$3-5
-  // - Items $20-50: shipping ~$5-10
-  // - Items $50-100: shipping ~$10-20
-  // - Items $100-200: shipping ~$20-40
-  // - Items $200+: shipping ~$40-60
-  if (priceUSD < 5) return 2.5;
-  if (priceUSD < 20) return 4;
-  if (priceUSD < 50) return 8;
-  if (priceUSD < 100) return 15;
-  if (priceUSD < 200) return 30;
-  return 50;
+  // AliExpress Choice products (cheap items < $10) have subsidized shipping
+  // Only ~$1.25 (≈100 MT) effective shipping cost for Choice
+  if (priceUSD < 10) return 1.25; // Choice products - flat 100 MT shipping
+  
+  // Regular products:
+  // - Items $10-20: shipping ~$3-4
+  // - Items $20-50: shipping ~$5-8
+  // - Items $50-100: shipping ~$10-15
+  // - Items $100-200: shipping ~$20-30
+  // - Items $200+: shipping ~$40-50
+  if (priceUSD < 20) return 3.5;
+  if (priceUSD < 50) return 7;
+  if (priceUSD < 100) return 12;
+  if (priceUSD < 200) return 25;
+  return 45;
 }
 
 // Bulk convert prices (for sync operations)

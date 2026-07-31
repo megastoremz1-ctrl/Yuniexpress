@@ -49,12 +49,12 @@ export async function GET(request: NextRequest) {
 
     // Estimate shipping cost based on product price
     function estimateShipping(priceUSD: number): number {
-      if (priceUSD < 5) return 2.5;
-      if (priceUSD < 20) return 4;
-      if (priceUSD < 50) return 8;
-      if (priceUSD < 100) return 15;
-      if (priceUSD < 200) return 30;
-      return 50;
+      if (priceUSD < 10) return 1.25;
+      if (priceUSD < 20) return 3.5;
+      if (priceUSD < 50) return 7;
+      if (priceUSD < 100) return 12;
+      if (priceUSD < 200) return 25;
+      return 45;
     }
 
     // Search AliExpress
@@ -145,7 +145,7 @@ async function saveProductsToDb(aliProducts: any[], rate: number, margin: number
       const originalUSD = parseFloat(p.target_original_price || priceUSD.toString());
       if (priceUSD <= 0) continue;
 
-      const shippingUSD = priceUSD < 5 ? 2.5 : priceUSD < 20 ? 4 : priceUSD < 50 ? 8 : priceUSD < 100 ? 15 : priceUSD < 200 ? 30 : 50;
+      const shippingUSD = priceUSD < 10 ? 1.25 : priceUSD < 20 ? 3.5 : priceUSD < 50 ? 7 : priceUSD < 100 ? 12 : priceUSD < 200 ? 25 : 45;
       const priceMZN = Math.ceil((priceUSD + shippingUSD) * rate * (1 + margin / 100));
       const originalMZN = originalUSD > priceUSD ? Math.ceil((originalUSD + shippingUSD) * rate * (1 + margin / 100)) : null;
       const mainImage = p.product_main_image_url || "";
