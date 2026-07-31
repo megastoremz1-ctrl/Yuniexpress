@@ -52,19 +52,21 @@ export async function createPayment(
 
   const payload: Record<string, any> = {
     amount: request.amount.toFixed(2),
-    reference: request.reference.replace(/[^a-zA-Z0-9]/g, ""), // Only letters and numbers
+    reference: request.reference.replace(/[^a-zA-Z0-9]/g, ""),
     description: (request.description || `Pagamento YuniExpress ${request.reference}`).slice(0, 125),
-    return_url: request.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`,
+    return_url: request.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpressmz.vercel.app"}/account/orders`,
   };
+
+  // Add callback URL for webhook
+  if (request.callbackUrl) {
+    payload.callback_url = request.callbackUrl;
+  } else {
+    payload.callback_url = `${process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpressmz.vercel.app"}/api/payments/callback`;
+  }
 
   // Add method if specified (otherwise PaySuite shows all options)
   if (request.method) {
     payload.method = request.method;
-  }
-
-  // Add callback URL for webhook notifications
-  if (request.callbackUrl) {
-    payload.callback_url = request.callbackUrl;
   }
 
   try {

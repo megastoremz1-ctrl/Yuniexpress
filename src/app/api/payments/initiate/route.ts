@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
     const { orderId, method } = await request.json();
 
     if (!orderId) {
-      return NextResponse.json(
-        { error: "Order ID é obrigatório" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Order ID é obrigatório" }, { status: 400 });
     }
 
     // Get order
@@ -32,14 +29,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Esta encomenda já foi paga" }, { status: 400 });
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://yuniexpressmz.vercel.app";
+
     // Create payment via PaySuite
     const payment = await createPayment({
       amount: order.totalMZN,
       reference: order.orderNumber,
-      description: `Pagamento YuniExpress #${order.orderNumber}`,
-      method: method || undefined, // mpesa, emola, or credit_card
-      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`,
-      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/callback`,
+      description: `Pagamento YuniExpress ${order.orderNumber}`,
+      method: method || undefined,
+      returnUrl: `${appUrl}/account/orders`,
+      callbackUrl: `${appUrl}/api/payments/callback`,
     });
 
     if (payment.success && payment.paymentId) {
@@ -56,13 +55,14 @@ export async function POST(request: NextRequest) {
         success: true,
         paymentId: payment.paymentId,
         checkoutUrl: payment.checkoutUrl,
-        message: "Redirecione o cliente para a página de pagamento.",
+        message: "Redirecione para a página de pagamento.",
       });
     } else {
+      console.error("PaySuite payment failed:", payment.error);
       return NextResponse.json(
         {
           success: false,
-          message: payment.error || "Erro ao iniciar pagamento",
+          message: payment.error || "Erro ao iniciar pagamento. Tente novamente.",
         },
         { status: 400 }
       );
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Payment initiation error:", error);
     return NextResponse.json(
-      { error: "Erro ao processar pagamento" },
+      { error: "Erro ao processar pagamento: " + (error.message || "desconhecido") },
       { status: 500 }
     );
   }
