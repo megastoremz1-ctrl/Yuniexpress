@@ -47,36 +47,35 @@ export default function HomePageClient({
   return (
     <div>
       {/* Hero Section */}
-      <div className="container mx-auto px-3 pt-3 pb-1">
-        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-3">
-          {/* Category Sidebar - Desktop */}
-          <aside className="hidden lg:block bg-white rounded-xl border overflow-hidden">
-            <div className="p-3 bg-gray-900 text-white text-sm font-semibold">
+      <div className="container mx-auto px-3 pt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-2">
+          {/* Category Sidebar - matches banner height */}
+          <aside className="hidden lg:block bg-white rounded-lg border overflow-hidden" style={{ aspectRatio: "200/350" }}>
+            <div className="p-2.5 bg-gray-900 text-white text-xs font-semibold">
               Categorias
             </div>
-            <nav className="py-1">
-              {categories.slice(0, 13).map((cat) => {
+            <nav className="overflow-y-auto" style={{ maxHeight: "calc(100% - 36px)" }}>
+              {categories.slice(0, 10).map((cat) => {
                 const IconComp = categoryIcons[cat.icon || ""] || ShoppingBag;
                 return (
                   <Link
                     key={cat.id}
                     href={`/category/${cat.slug}`}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 transition-colors group"
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 transition-colors group"
                   >
-                    <IconComp size={16} className="text-gray-400 group-hover:text-yellow-600" />
+                    <IconComp size={14} className="text-gray-400 group-hover:text-yellow-600" />
                     <span className="flex-1 truncate">{cat.name}</span>
-                    <ChevronRight size={12} className="text-gray-300" />
                   </Link>
                 );
               })}
-              <Link href="/categories" className="flex items-center gap-3 px-4 py-2.5 text-sm text-yellow-600 font-medium hover:bg-yellow-50">
+              <Link href="/categories" className="flex items-center gap-2 px-3 py-2 text-xs text-yellow-600 font-medium hover:bg-yellow-50">
                 Ver todas →
               </Link>
             </nav>
           </aside>
 
-          {/* Main Banner - 1920x700 aspect ratio */}
-          <div className="min-h-[250px] md:min-h-[350px] lg:min-h-[400px]">
+          {/* Main Banner - 1920x700 */}
+          <div>
             <HeroBanner banners={banners} />
           </div>
         </div>
@@ -197,7 +196,7 @@ export default function HomePageClient({
         </div>
 
         {/* Load more */}
-        <div className="text-center py-6">
+        <div className="text-center py-4">
           <Link
             href={`/search?sort=${activeTab === "new" ? "newest" : "popular"}`}
             className="inline-flex items-center gap-2 px-8 py-3 bg-white border-2 border-yellow-500 text-yellow-600 rounded-full font-medium hover:bg-yellow-50 transition-colors"
@@ -241,7 +240,7 @@ function NewsletterSection() {
   };
 
   return (
-    <div className="my-10 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 text-center border border-yellow-100">
+    <div className="my-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 text-center border border-yellow-100">
       <h3 className="text-xl font-bold text-gray-900 mb-2">
         Receba ofertas exclusivas
       </h3>

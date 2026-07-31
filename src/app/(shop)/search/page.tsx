@@ -37,26 +37,40 @@ function SearchContent() {
       if (maxPrice) params.set("maxPrice", maxPrice);
       if (freeShipping) params.set("freeShipping", "true");
 
-      // First search local DB
+      // Search local DB first
       const res = await fetch(`/api/products?${params}`);
       const data = await res.json();
+      const localProducts = data.products || [];
 
-      if (data.products && data.products.length > 0) {
-        setProducts(data.products);
+      if (localProducts.length >= 6) {
+        // Enough local results
+        setProducts(localProducts);
         setTotal(data.pagination?.total || 0);
-      } else if (query) {
-        // No local results → search AliExpress in real-time
-        const liveRes = await fetch(`/api/search/live?q=${encodeURIComponent(query)}&page=${page}`);
-        const liveData = await liveRes.json();
-        if (liveData.products && liveData.products.length > 0) {
-          setProducts(liveData.products);
-          setTotal(liveData.total || liveData.products.length);
-        } else {
-          setProducts([]);
-          setTotal(0);
+      } else if (query && query.length >= 2) {
+        // Few/no local results → also search AliExpress
+        try {
+          const liveRes = await fetch(`/api/search/live?q=${encodeURIComponent(query)}&page=${page}`);
+          const liveData = await liveRes.json();
+          const liveProducts = liveData.products || [];
+          
+          // Combine local + live, remove duplicates
+          const allIds = new Set(localProducts.map((p: any) => p.id));
+          const combined = [...localProducts];
+          for (const p of liveProducts) {
+            if (!allIds.has(p.id)) {
+              combined.push(p);
+              allIds.add(p.id);
+            }
+          }
+          setProducts(combined);
+          setTotal(combined.length);
+        } catch {
+          // Live search failed, show local results
+          setProducts(localProducts);
+          setTotal(localProducts.length);
         }
       } else {
-        setProducts([]);
+        setProducts(localProducts);
         setTotal(0);
       }
     } catch (error) {
