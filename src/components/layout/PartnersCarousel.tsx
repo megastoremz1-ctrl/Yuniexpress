@@ -10,7 +10,7 @@ const partners = [
   },
   {
     name: "ZumboPay",
-    logo: "/partners/zumbopay.svg",
+    logo: "/partners/zumbopay.png",
     url: "https://zumbopay.com",
   },
   {
@@ -22,6 +22,11 @@ const partners = [
     name: "AliExpress",
     logo: "/partners/aliexpress.svg",
     url: "https://aliexpress.com",
+  },
+  {
+    name: "M-Pesa",
+    logo: "/partners/mpesa.svg",
+    url: "https://www.vodacom.co.mz/mpesa",
   },
   {
     name: "e-Mola",

@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
-  <rect x="2" y="10" width="40" height="40" rx="8" fill="#6366F1"/>
-  <path d="M12 35L22 20H32L22 35H32L22 45H12L22 35Z" fill="white" stroke="white" stroke-width="1"/>
-  <text x="48" y="38" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#1F2937">Zumbo</text>
-  <text x="126" y="38" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#6366F1">Pay</text>
-</svg>

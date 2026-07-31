@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
-  <rect x="2" y="12" width="36" height="36" rx="18" fill="#3B82F6"/>
-  <path d="M15 26 L20 30 L30 22" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <text x="44" y="37" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#1F2937">Pay</text>
-  <text x="82" y="37" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#3B82F6">Go</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 100" fill="none">
+  <!-- Dark background like real PayGo logo -->
+  <rect width="280" height="100" rx="8" fill="#0B1628"/>
+  <!-- Blue lightning bolt - accurate to real logo -->
+  <path d="M58 25L42 52H54L46 75L72 46H60L68 25Z" fill="#2D6FF7"/>
+  <!-- PayGo text - bold italic white like real logo -->
+  <text x="86" y="62" font-family="'Arial Black', Arial, sans-serif" font-size="34" font-weight="900" font-style="italic" fill="white" letter-spacing="-1">PayGo</text>
 </svg>
