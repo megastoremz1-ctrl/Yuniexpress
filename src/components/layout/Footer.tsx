@@ -55,7 +55,10 @@ export default function Footer() {
               <li><Link href="/search?sort=newest" className="hover:text-yellow-500 transition-colors">Novos Produtos</Link></li>
               <li><Link href="/search?sort=popular" className="hover:text-yellow-500 transition-colors">Mais Vendidos</Link></li>
               <li><Link href="/account/orders" className="hover:text-yellow-500 transition-colors">Rastrear Encomenda</Link></li>
-              <li><Link href="/account" className="hover:text-yellow-500 transition-colors">Minha Conta</Link></li>
+              <li><Link href="/help" className="hover:text-yellow-500 transition-colors">Centro de Ajuda</Link></li>
+              <li><Link href="/about" className="hover:text-yellow-500 transition-colors">Sobre Nós</Link></li>
+              <li><Link href="/terms" className="hover:text-yellow-500 transition-colors">Termos e Condições</Link></li>
+              <li><Link href="/privacy" className="hover:text-yellow-500 transition-colors">Política de Privacidade</Link></li>
             </ul>
           </div>
 
