@@ -16,6 +16,7 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
+  const [billingPhone, setBillingPhone] = useState("");
   const [address, setAddress] = useState({
     name: "",
     phone: "",
@@ -99,6 +100,22 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validate billing phone for M-Pesa/e-Mola
+    if ((paymentMethod === "mpesa" || paymentMethod === "emola") && !billingPhone) {
+      toast.error("Insira o número para cobrança");
+      return;
+    }
+
+    if (paymentMethod === "mpesa" && billingPhone && !billingPhone.match(/^8[45]/)) {
+      toast.error("Número M-Pesa deve começar com 84 ou 85");
+      return;
+    }
+
+    if (paymentMethod === "emola" && billingPhone && !billingPhone.match(/^8[67]/)) {
+      toast.error("Número e-Mola deve começar com 86 ou 87");
+      return;
+    }
+
     setLoading(true);
     try {
       // Create order with items from Zustand cart
@@ -134,7 +151,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           orderId: orderData.order.id,
           method: paymentMethod !== "all" ? paymentMethod : undefined,
-          phone: address.phone, // For STK push (M-Pesa/e-Mola)
+          phone: billingPhone ? `258${billingPhone}` : undefined,
         }),
       });
 
@@ -249,6 +266,37 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </div>
+
+            {/* Phone number for billing (M-Pesa / e-Mola) */}
+            {(paymentMethod === "mpesa" || paymentMethod === "emola") && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Número para cobrança ({paymentMethod === "mpesa" ? "M-Pesa 84/85" : "e-Mola 86/87"})
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500 bg-white px-3 py-2.5 border rounded-lg">+258</span>
+                  <input
+                    type="tel"
+                    value={billingPhone}
+                    onChange={(e) => setBillingPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                    placeholder={paymentMethod === "mpesa" ? "84XXXXXXX" : "86XXXXXXX"}
+                    className="flex-1 px-4 py-2.5 border rounded-lg text-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:outline-none"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Receberá um pedido de PIN no telemóvel para confirmar o pagamento
+                </p>
+              </div>
+            )}
+
+            {paymentMethod === "all" && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                <p className="text-xs text-blue-700">
+                  Será redirecionado para uma página segura para inserir os dados do cartão (Visa/Mastercard com 3D Secure).
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
