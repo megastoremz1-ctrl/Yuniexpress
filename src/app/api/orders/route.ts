@@ -102,19 +102,37 @@ export async function POST(request: NextRequest) {
 
     // Calculate totals from items
     let subtotalMZN = 0;
-    const orderItems = items.map((item: any) => {
+    const orderItems: any[] = [];
+    
+    for (const item of items) {
       const itemTotal = item.priceMZN * item.quantity;
       subtotalMZN += itemTotal;
-      return {
-        productId: item.productId,
+      
+      // Verify product exists in DB, find by id or aliexpressId
+      let productId = item.productId;
+      if (productId.startsWith("ali-")) {
+        const aliId = productId.replace("ali-", "");
+        const found = await prisma.product.findUnique({ where: { aliexpressId: aliId } });
+        if (found) productId = found.id;
+      } else {
+        const found = await prisma.product.findUnique({ where: { id: productId } });
+        if (!found) {
+          // Try finding by aliexpressId
+          const byAli = await prisma.product.findUnique({ where: { aliexpressId: productId } });
+          if (byAli) productId = byAli.id;
+        }
+      }
+
+      orderItems.push({
+        productId,
         title: item.title,
         image: item.image || null,
         variant: item.variant || null,
         quantity: item.quantity,
         priceMZN: item.priceMZN,
         totalMZN: itemTotal,
-      };
-    });
+      });
+    }
 
     // Apply coupon if provided
     let discountMZN = 0;

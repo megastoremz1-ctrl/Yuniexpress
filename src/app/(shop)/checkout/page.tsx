@@ -87,7 +87,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Initiate payment via PaySuite
+      // Initiate payment via PaySuite - direct redirect
       const payRes = await fetch("/api/payments/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,18 +99,21 @@ export default function CheckoutPage() {
 
       const payData = await payRes.json();
 
-      if (payData.success && payData.checkoutUrl) {
+      if (payData.checkoutUrl) {
         clearCart();
-        toast.success("Redirecionando para o pagamento...");
-        window.location.href = payData.checkoutUrl;
+        // Force redirect
+        window.location.replace(payData.checkoutUrl);
+      } else if (payData.success === false) {
+        toast.error(payData.message || payData.error || "Erro no pagamento");
+        clearCart();
+        router.push("/account/orders");
       } else {
-        // Payment initiation failed but order was created
         clearCart();
-        toast.success("Encomenda criada! Complete o pagamento na área de encomendas.");
+        toast.success("Encomenda criada!");
         router.push("/account/orders");
       }
-    } catch (error) {
-      toast.error("Erro ao processar encomenda. Tente novamente.");
+    } catch (error: any) {
+      toast.error("Erro: " + (error.message || "Tente novamente"));
     } finally {
       setLoading(false);
     }
