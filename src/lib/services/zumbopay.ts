@@ -148,11 +148,12 @@ export async function createPayment(request: PaymentRequest): Promise<PaymentRes
 
     const data = await res.json();
 
-    if (res.status === 201 && data.data?.checkout_url) {
+    if (res.status === 201) {
+      const checkoutUrl = data.checkout_url || data.data?.checkout_url || data.url;
       return {
         success: true,
-        checkoutUrl: data.data.checkout_url,
-        reference: data.data.reference,
+        checkoutUrl,
+        reference: data.data?.reference,
       };
     } else {
       return {
