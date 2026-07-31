@@ -1,7 +1,7 @@
 {
-  "name": "YuniExpress - Compras Internacionais",
+  "name": "YuniExpress - Compre Global, Pague Local",
   "short_name": "YuniExpress",
-  "description": "O seu marketplace internacional favorito em Mocambique. Compre produtos do mundo inteiro pagando em Meticais.",
+  "description": "O seu marketplace internacional em Moçambique. Produtos do mundo inteiro com preços em Meticais. Pagamento via M-Pesa, e-Mola e Visa/Mastercard.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,6 +9,7 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-MZ",
+  "id": "/",
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -59,7 +60,26 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": ["shopping", "lifestyle"],
-  "screenshots": [],
-  "prefer_related_applications": false
+  "categories": ["shopping", "lifestyle", "business"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Pesquisar",
+      "short_name": "Pesquisar",
+      "url": "/search",
+      "icons": [{"src": "/icons/icon-96x96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Minhas Encomendas",
+      "short_name": "Encomendas",
+      "url": "/account/orders",
+      "icons": [{"src": "/icons/icon-96x96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Carrinho",
+      "short_name": "Carrinho",
+      "url": "/cart",
+      "icons": [{"src": "/icons/icon-96x96.png", "sizes": "96x96"}]
+    }
+  ]
 }
