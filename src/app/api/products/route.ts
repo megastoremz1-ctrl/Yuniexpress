@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
       where.featured = true;
     }
 
-    // Build orderBy
     let orderBy: any = { createdAt: "desc" };
     switch (sort) {
       case "price_asc":
@@ -73,22 +72,30 @@ export async function GET(request: NextRequest) {
         orderBy = { createdAt: "desc" };
     }
 
+    // For default sort, randomize order
+    const useRandom = !sort || sort === "newest";
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         include: {
-          images: { orderBy: { order: "asc" }, take: 2 },
+          images: { orderBy: { order: "asc" }, take: 1 },
           category: { select: { id: true, name: true, slug: true } },
         },
-        orderBy,
+        orderBy: useRandom ? undefined : orderBy,
         skip,
         take: limit,
       }),
       prisma.product.count({ where }),
     ]);
 
+    // Shuffle if no specific sort
+    const finalProducts = useRandom
+      ? [...products].sort(() => Math.random() - 0.5)
+      : products;
+
     return NextResponse.json({
-      products: products.map((p: any) => ({
+      products: finalProducts.map((p: any) => ({
         id: p.id,
         title: p.title,
         slug: p.slug,

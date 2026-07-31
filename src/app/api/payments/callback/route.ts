@@ -1,114 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { validateWebhookSignature, parseWebhookEvent } from "@/lib/services/paysuite";
+import { validateWebhookSignature } from "@/lib/services/zumbopay";
 import { sendOrderNotification } from "@/lib/services/onesignal";
 
 /**
- * PaySuite Webhook Handler
- *
- * Receives payment.success and payment.failed events
- * Validates signature via X-Webhook-Signature header (HMAC-SHA256)
+ * ZumboPay Webhook Handler
+ * Events: payment.succeeded, payment.failed, payment.refunded
+ * Signature: x-zumbopay-signature (HMAC-SHA256)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = request.headers.get("x-webhook-signature") || "";
+    const signature = request.headers.get("x-zumbopay-signature") || "";
 
     // Validate webhook signature
-    if (!validateWebhookSignature(body, signature)) {
-      console.error("Invalid PaySuite webhook signature");
+    if (signature && !validateWebhookSignature(body, signature)) {
+      console.error("Invalid ZumboPay webhook signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    // Parse the event
-    const event = parseWebhookEvent(body);
-    if (!event) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-    }
+    const event = JSON.parse(body);
+    const eventType = event.event || event.type;
+    const data = event.data || event;
 
-    console.log(`PaySuite webhook: ${event.event} for reference ${event.data.reference}`);
+    console.log(`ZumboPay webhook: ${eventType}`, data.reference);
 
-    // Find order by payment reference (PaySuite payment ID) or order number
+    // Find order by reference (order number)
     const order = await prisma.order.findFirst({
       where: {
         OR: [
-          { paymentRef: event.data.id },
-          { orderNumber: event.data.reference },
+          { paymentRef: data.reference },
+          { orderNumber: data.reference },
+          { orderNumber: data.source_id },
         ],
       },
     });
 
     if (!order) {
-      console.error(`Order not found for PaySuite payment: ${event.data.id} / ${event.data.reference}`);
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      console.error(`Order not found for ZumboPay ref: ${data.reference}`);
+      return NextResponse.json({ received: true }); // Don't return 404, acknowledge
     }
 
-    // Process event
-    if (event.event === "payment.success") {
-      // Payment successful!
+    if (eventType === "payment.succeeded" || data.status === "success") {
       await prisma.order.update({
         where: { id: order.id },
         data: {
           paymentStatus: "PAID",
           status: "CONFIRMED",
-          paymentRef: event.data.id,
-          paymentMethod: event.data.transaction?.method
-            ? `paysuite_${event.data.transaction.method}`
-            : order.paymentMethod,
+          paymentRef: data.reference,
         },
       });
 
-      // Send push notification to user
-      await sendOrderNotification(order.userId, order.orderNumber, "CONFIRMED");
-
-      // Create in-app notification
-      await prisma.notification.create({
-        data: {
-          userId: order.userId,
-          title: "Pagamento confirmado!",
-          message: `O pagamento da encomenda #${order.orderNumber} (${event.data.amount} MT) foi confirmado com sucesso via ${event.data.transaction?.method || "PaySuite"}.`,
-          type: "order",
+      // Notify customer
+      try {
+        await sendOrderNotification(order.userId, order.orderNumber, "CONFIRMED");
+        await prisma.notification.create({
           data: {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            amount: event.data.amount,
-            method: event.data.transaction?.method,
+            userId: order.userId,
+            title: "Pagamento confirmado!",
+            message: `Encomenda #${order.orderNumber} paga com sucesso (${data.amount || order.totalMZN} MT).`,
+            type: "order",
+            data: { orderId: order.id, orderNumber: order.orderNumber },
           },
-        },
-      });
+        });
+      } catch {}
 
-      console.log(`✅ Order ${order.orderNumber} payment confirmed!`);
-    } else if (event.event === "payment.failed") {
-      // Payment failed
+      console.log(`✅ Order ${order.orderNumber} PAID`);
+    } else if (eventType === "payment.failed" || data.status === "failed") {
       await prisma.order.update({
         where: { id: order.id },
-        data: {
-          paymentStatus: "FAILED",
-        },
+        data: { paymentStatus: "FAILED" },
       });
-
-      // Notify user
-      await prisma.notification.create({
-        data: {
-          userId: order.userId,
-          title: "Pagamento falhou",
-          message: `O pagamento da encomenda #${order.orderNumber} falhou: ${event.data.error || "Tente novamente"}`,
-          type: "order",
-          data: {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            error: event.data.error,
-          },
-        },
+      console.log(`❌ Order ${order.orderNumber} FAILED`);
+    } else if (eventType === "payment.refunded") {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: "REFUNDED", status: "REFUNDED" },
       });
-
-      console.log(`❌ Order ${order.orderNumber} payment failed: ${event.data.error}`);
     }
 
-    // Always respond 200 to acknowledge receipt
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("PaySuite webhook error:", error);
+    console.error("ZumboPay webhook error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

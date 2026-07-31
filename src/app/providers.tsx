@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
 import { useEffect } from "react";
 import InstallPrompt from "@/components/layout/InstallPrompt";
+import CookieConsent from "@/components/layout/CookieConsent";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -20,6 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       {children}
       <InstallPrompt />
+      <CookieConsent />
       <Toaster
         position="top-right"
         toastOptions={{

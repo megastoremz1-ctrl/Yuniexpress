@@ -127,30 +127,35 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Initiate payment via PaySuite - direct redirect
+      // Initiate payment via ZumboPay
       const payRes = await fetch("/api/payments/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: orderData.order.id,
           method: paymentMethod !== "all" ? paymentMethod : undefined,
+          phone: address.phone, // For STK push (M-Pesa/e-Mola)
         }),
       });
 
       const payData = await payRes.json();
 
-      if (payData.checkoutUrl) {
+      if (payData.success) {
         clearCart();
-        // Force redirect
-        window.location.replace(payData.checkoutUrl);
-      } else if (payData.success === false) {
-        toast.error(payData.message || payData.error || "Erro no pagamento");
-        clearCart();
-        router.push("/account/orders");
+        if (payData.type === "stk_push") {
+          // STK push sent - customer confirms on phone
+          toast.success(payData.message || "Confirme o pagamento no telemóvel!");
+          router.push("/account/orders");
+        } else if (payData.checkoutUrl) {
+          // Redirect to ZumboPay checkout
+          toast.success("Redirecionando para pagamento...");
+          window.location.replace(payData.checkoutUrl);
+        } else {
+          toast.success("Encomenda criada!");
+          router.push("/account/orders");
+        }
       } else {
-        clearCart();
-        toast.success("Encomenda criada!");
-        router.push("/account/orders");
+        toast.error(payData.message || payData.error || "Erro no pagamento");
       }
     } catch (error: any) {
       toast.error("Erro: " + (error.message || "Tente novamente"));
@@ -217,9 +222,9 @@ export default function CheckoutPage() {
             </div>
             <div className="space-y-3">
               {[
-                { id: "mpesa", label: "M-Pesa", description: "Vodacom M-Pesa" },
-                { id: "emola", label: "e-Mola", description: "Movitel e-Mola" },
-                { id: "all", label: "Outros Métodos", description: "Cartão de crédito e mais" },
+                { id: "mpesa", label: "M-Pesa", description: "Vodacom M-Pesa — PIN no telemóvel" },
+                { id: "emola", label: "e-Mola", description: "Movitel e-Mola — PIN no telemóvel" },
+                { id: "all", label: "Visa / Mastercard", description: "Cartão de crédito ou débito (3DS)" },
               ].map((method) => (
                 <label
                   key={method.id}
