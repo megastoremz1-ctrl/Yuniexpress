@@ -19,6 +19,7 @@ import { useCartStore } from "@/store/cart";
 import { useWishlistStore } from "@/store/wishlist";
 import { ProductDetail, ReviewData } from "@/types";
 import Button from "@/components/ui/Button";
+import ReviewForm from "@/components/reviews/ReviewForm";
 
 interface ProductDetailClientProps {
   product: ProductDetail;
@@ -365,6 +366,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         <h2 className="text-lg font-bold text-gray-900 mb-4">
           Avaliações ({product.reviewCount})
         </h2>
+
+        {/* Review Form */}
+        <div className="mb-6">
+          <ReviewForm productId={product.id} onReviewSubmitted={() => window.location.reload()} />
+        </div>
+
         {product.reviews.length > 0 ? (
           <div className="space-y-4">
             {product.reviews.map((review) => (
