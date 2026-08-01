@@ -156,7 +156,7 @@ export default function OrdersPage() {
                         {order.trackingNumber}
                       </span>
                     )}
-                    {order.status === "CANCELLED" && (
+                    {order.status === "CANCELLED" ? (
                       <button
                         onClick={() => restoreToCart(order)}
                         className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 transition-colors"
@@ -164,6 +164,14 @@ export default function OrdersPage() {
                         <ShoppingCart size={12} />
                         Restaurar ao Carrinho
                       </button>
+                    ) : (
+                      <Link
+                        href={`/account/orders/${order.id}`}
+                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 transition-colors"
+                      >
+                        <Package size={12} />
+                        Ver Detalhes
+                      </Link>
                     )}
                   </div>
                 </div>
