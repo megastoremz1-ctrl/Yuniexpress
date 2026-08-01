@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { translateSearchQuery } from "@/lib/translations/dictionary";
 
 const APP_KEY = process.env.ALIEXPRESS_APP_KEY || "525112";
 const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET || "NWikYHEWhXXKP4laNeb8Mpq0ZharJwSU";
@@ -37,6 +38,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ products: [], source: "none" });
     }
 
+    // Translate query from Portuguese to English for AliExpress search
+    const { translated, hasTranslation } = translateSearchQuery(query);
+    const searchQuery = hasTranslation ? translated : query;
+
     // Get exchange rate and margin
     const rateRecord = await prisma.exchangeRate.findFirst({
       where: { fromCurrency: "USD", toCurrency: "MZN" },
@@ -65,7 +70,7 @@ export async function GET(request: NextRequest) {
       timestamp: getTimestamp(),
       format: "json",
       v: "2.0",
-      keywords: query,
+      keywords: searchQuery,
       target_currency: "USD",
       target_language: "EN",
       page_no: page,

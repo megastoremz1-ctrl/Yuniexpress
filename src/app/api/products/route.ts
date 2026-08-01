@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getSearchVariants } from "@/lib/translations/dictionary";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,10 +28,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-      ];
+      // Use translation dictionary to search in both PT and EN
+      const searchVariants = getSearchVariants(search);
+      where.OR = searchVariants.flatMap((variant) => [
+        { title: { contains: variant, mode: "insensitive" } },
+        { description: { contains: variant, mode: "insensitive" } },
+      ]);
     }
 
     if (minPrice) {
