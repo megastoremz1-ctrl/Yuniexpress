@@ -1,261 +1,451 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import bcrypt from "bcryptjs";
-
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import crypto from "crypto";
+import { sendEmailVerification } from "@/lib/services/email";
+
+export const dynamic = "force-dynamic";
+
+
+// ===============================
+// GET - Confirmar email pelo token
+// ===============================
+
+export async function GET(
+  request: NextRequest
+): Promise<NextResponse> {
+
+  try {
+
+    const { searchParams } =
+      new URL(request.url);
+
+
+    const token =
+      searchParams.get("token");
 
 
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+    if (!token) {
 
-  providers: [
-
-    Credentials({
-
-      name: "credentials",
-
-      credentials: {
-
-        email:{
-          label:"Email",
-          type:"email"
+      return NextResponse.json(
+        {
+          error:
+          "Token de verificação não fornecido."
         },
-
-        password:{
-          label:"Password",
-          type:"password"
+        {
+          status: 400
         }
-
-      },
-
-
-      async authorize(credentials){
-
-
-        const email =
-          credentials?.email
-          ?.toString()
-          .toLowerCase()
-          .trim();
-
-
-
-        const password =
-          credentials?.password
-          ?.toString();
-
-
-
-        if(!email || !password){
-
-          throw new Error(
-            "Email e password são obrigatórios."
-          );
-
-        }
-
-
-
-        /*
-          Procurar utilizador
-        */
-
-        const user =
-          await prisma.user.findUnique({
-
-            where:{
-              email
-            }
-
-          });
-
-
-
-
-        if(!user){
-
-          throw new Error(
-            "Email ou password incorretos."
-          );
-
-        }
-
-
-
-
-
-        /*
-          Confirmar email
-        */
-
-
-        if(!user.emailVerified){
-
-
-          throw new Error(
-            "EMAIL_NOT_VERIFIED"
-          );
-
-
-        }
-
-
-
-
-
-        /*
-          Validar password
-        */
-
-
-        const passwordValid =
-          await bcrypt.compare(
-            password,
-            user.password
-          );
-
-
-
-        if(!passwordValid){
-
-          throw new Error(
-            "Email ou password incorretos."
-          );
-
-        }
-
-
-
-
-
-        return {
-
-          id:user.id,
-
-          name:user.name,
-
-          email:user.email,
-
-          role:user.role,
-
-          image:user.image
-
-        };
-
-      }
-
-    }),
-
-
-
-
-
-    Google({
-
-      clientId:
-        process.env.GOOGLE_CLIENT_ID!,
-
-      clientSecret:
-        process.env.GOOGLE_CLIENT_SECRET!
-
-    })
-
-  ],
-
-
-
-
-
-
-
-  callbacks:{
-
-
-
-    async jwt({token,user}){
-
-
-      if(user){
-
-        token.id =
-          user.id;
-
-
-        token.role =
-          user.role;
-
-
-      }
-
-
-      return token;
-
-    },
-
-
-
-
-
-
-    async session({session,token}){
-
-
-      if(session.user){
-
-        session.user.id =
-          token.id as string;
-
-
-        session.user.role =
-          token.role as string;
-
-
-      }
-
-
-      return session;
+      );
 
     }
 
 
-  },
+
+
+    const verificationToken =
+      await prisma.verificationToken.findUnique({
+
+        where: {
+          token
+        }
+
+      });
+
+
+
+
+
+    if (!verificationToken) {
+
+      return NextResponse.json(
+        {
+          error:
+          "Token inválido ou já utilizado."
+        },
+        {
+          status:400
+        }
+      );
+
+    }
+
+
+
+
+
+    // verificar expiração
+
+    if (
+      new Date() >
+      verificationToken.expires
+    ) {
+
+
+      await prisma.verificationToken.delete({
+
+        where:{
+
+          identifier_token:{
+
+            identifier:
+            verificationToken.identifier,
+
+            token:
+            verificationToken.token
+
+          }
+
+        }
+
+      });
+
+
+
+      return NextResponse.json(
+        {
+          error:
+          "Token expirado. Solicite um novo email."
+        },
+        {
+          status:400
+        }
+      );
+
+    }
+
+
+
+
+
+    // Atualizar usuário
+
+    await prisma.user.update({
+
+      where:{
+
+        email:
+        verificationToken.identifier
+
+      },
+
+      data:{
+
+        emailVerified:
+        new Date()
+
+      }
+
+    });
+
+
+
+
+
+    // Remover token usado
+
+    await prisma.verificationToken.delete({
+
+      where:{
+
+        identifier_token:{
+
+          identifier:
+          verificationToken.identifier,
+
+          token:
+          verificationToken.token
+
+        }
+
+      }
+
+    });
+
+
+
+
+
+    return NextResponse.json({
+
+      success:true,
+
+      message:
+      "Email verificado com sucesso! Já pode iniciar sessão."
+
+    });
+
+
+
+
+
+  } catch(error) {
+
+
+    console.error(
+      "VERIFY EMAIL ERROR:",
+      error
+    );
+
+
+    return NextResponse.json(
+
+      {
+        error:
+        "Erro interno ao verificar email."
+      },
+
+      {
+        status:500
+      }
+
+    );
+
+
+  }
+
+}
 
 
 
 
 
 
-  pages:{
 
 
-    signIn:"/login"
-
-  },
-
-
+// ===============================
+// POST - Reenviar email
+// ===============================
 
 
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse> {
 
 
-  session:{
+  try {
 
 
-    strategy:"jwt"
-
-
-  },
-
+    const body =
+      await request.json();
 
 
 
+    const email =
+      body.email
+      ?.toLowerCase()
+      ?.trim();
 
 
-  secret:
-    process.env.AUTH_SECRET,
 
 
-  trustHost:true
+
+    if (!email) {
 
 
-});
+      return NextResponse.json(
+
+        {
+          error:
+          "Email é obrigatório."
+        },
+
+        {
+          status:400
+        }
+
+      );
+
+
+    }
+
+
+
+
+
+    const user =
+      await prisma.user.findUnique({
+
+        where:{
+          email
+        }
+
+      });
+
+
+
+
+
+
+    /*
+      Não revelar se existe usuário
+    */
+
+    if (!user) {
+
+
+      return NextResponse.json({
+
+        message:
+        "Se o email existir, receberá um novo link."
+
+      });
+
+
+    }
+
+
+
+
+
+
+    if(user.emailVerified){
+
+
+      return NextResponse.json(
+
+        {
+          error:
+          "Este email já foi verificado."
+        },
+
+        {
+          status:400
+        }
+
+      );
+
+
+    }
+
+
+
+
+
+
+
+    // remover tokens antigos
+
+    await prisma.verificationToken.deleteMany({
+
+      where:{
+
+        identifier:
+        email
+
+      }
+
+    });
+
+
+
+
+
+
+
+    // criar novo token
+
+    const token =
+      crypto
+      .randomBytes(32)
+      .toString("hex");
+
+
+
+
+
+
+    await prisma.verificationToken.create({
+
+      data:{
+
+        identifier:
+        email,
+
+        token,
+
+        expires:
+
+        new Date(
+
+          Date.now()
+          +
+          24 *
+          60 *
+          60 *
+          1000
+
+        )
+
+      }
+
+    });
+
+
+
+
+
+
+
+
+    await sendEmailVerification(
+
+      email,
+
+      user.name ||
+      "Cliente",
+
+      token
+
+    );
+
+
+
+
+
+
+
+
+    return NextResponse.json({
+
+      success:true,
+
+      message:
+      "Email de verificação reenviado com sucesso."
+
+    });
+
+
+
+
+
+
+
+
+  } catch(error) {
+
+
+    console.error(
+      "RESEND EMAIL ERROR:",
+      error
+    );
+
+
+
+    return NextResponse.json(
+
+      {
+        error:
+        "Erro interno ao reenviar email."
+      },
+
+      {
+        status:500
+      }
+
+    );
+
+
+  }
+
+
+}
