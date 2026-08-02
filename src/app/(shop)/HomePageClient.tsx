@@ -38,12 +38,19 @@ export default function HomePageClient({
   const [activeTab, setActiveTab] = useState<"featured" | "new" | "recommended">("featured");
 
   // Shuffle products client-side (each visitor sees different order, no extra DB queries)
-  const [shuffledFeatured] = useState(() =>
-    [...featuredProducts].sort(() => Math.random() - 0.5)
-  );
-  const [shuffledNew] = useState(() =>
-    [...newProducts].sort(() => Math.random() - 0.5)
-  );
+  function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled;
+}
+
+const [shuffledFeatured] = useState(() => shuffleArray(featuredProducts));
+const [shuffledNew] = useState(() => shuffleArray(newProducts));
 
   useEffect(() => {
     fetch("/api/recommendations?limit=12")
