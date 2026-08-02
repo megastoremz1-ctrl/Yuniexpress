@@ -1,207 +1,485 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import crypto from "crypto";
-import { sendEmailVerification } from "@/lib/services/email";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  Mail,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 
-
-// ===============================
-// GET - Confirmar email pelo token
-// ===============================
-
-export async function GET(
-  request: NextRequest
-): Promise<NextResponse> {
-
-  try {
-
-    const { searchParams } =
-      new URL(request.url);
+import Button from "@/components/ui/Button";
 
 
-    const token =
-      searchParams.get("token");
+function VerifyEmailContent() {
+
+  const searchParams = useSearchParams();
+
+  const token = searchParams.get("token");
+  const email = searchParams.get("email");
+
+
+  const [status, setStatus] = useState<
+    "pending" | "verifying" | "success" | "error"
+  >(token ? "verifying" : "pending");
+
+
+  const [message, setMessage] = useState("");
+
+  const [resending, setResending] = useState(false);
+
+  const [resent, setResent] = useState(false);
+
+  const [cooldown, setCooldown] = useState(0);
 
 
 
-    if (!token) {
+  useEffect(() => {
 
-      return NextResponse.json(
-        {
-          error:
-          "Token de verificação não fornecido."
-        },
-        {
-          status: 400
-        }
-      );
-
+    if(token){
+      verifyEmail(token);
     }
 
+  }, [token]);
 
 
 
-    const verificationToken =
-      await prisma.verificationToken.findUnique({
+  useEffect(() => {
 
-        where: {
-          token
-        }
-
-      });
+    if(cooldown <= 0) return;
 
 
+    const timer = setTimeout(() => {
+      setCooldown(cooldown - 1);
+    },1000);
+
+
+    return () => clearTimeout(timer);
+
+
+  },[cooldown]);
 
 
 
-    if (!verificationToken) {
 
-      return NextResponse.json(
-        {
-          error:
-          "Token inválido ou já utilizado."
-        },
-        {
-          status:400
-        }
+
+  async function verifyEmail(token:string){
+
+    try {
+
+      const res = await fetch(
+        `/api/auth/verify-email?token=${token}`
       );
 
-    }
+
+      const data = await res.json();
 
 
+      if(res.ok){
+
+        setStatus("success");
+
+        setMessage(
+          data.message ||
+          "Email verificado com sucesso!"
+        );
 
 
+      }else{
 
-    // verificar expiração
+        setStatus("error");
 
-    if (
-      new Date() >
-      verificationToken.expires
-    ) {
-
-
-      await prisma.verificationToken.delete({
-
-        where:{
-
-          identifier_token:{
-
-            identifier:
-            verificationToken.identifier,
-
-            token:
-            verificationToken.token
-
-          }
-
-        }
-
-      });
-
-
-
-      return NextResponse.json(
-        {
-          error:
-          "Token expirado. Solicite um novo email."
-        },
-        {
-          status:400
-        }
-      );
-
-    }
-
-
-
-
-
-    // Atualizar usuário
-
-    await prisma.user.update({
-
-      where:{
-
-        email:
-        verificationToken.identifier
-
-      },
-
-      data:{
-
-        emailVerified:
-        new Date()
+        setMessage(
+          data.error ||
+          "Token inválido ou expirado."
+        );
 
       }
 
-    });
+
+    } catch {
+
+
+      setStatus("error");
+
+      setMessage(
+        "Erro de conexão. Tente novamente."
+      );
+
+
+    }
+
+  }
 
 
 
 
 
-    // Remover token usado
 
-    await prisma.verificationToken.delete({
+  async function resendEmail(){
 
-      where:{
 
-        identifier_token:{
+    if(!email || resending || cooldown > 0)
+      return;
 
-          identifier:
-          verificationToken.identifier,
 
-          token:
-          verificationToken.token
+    setResending(true);
 
+    setResent(false);
+
+
+
+    try{
+
+
+      const res = await fetch(
+        "/api/auth/verify-email",
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json"
+          },
+          body:JSON.stringify({
+            email
+          })
         }
+      );
+
+
+      const data = await res.json();
+
+
+
+      if(res.ok){
+
+        setResent(true);
+
+        setCooldown(60);
+
+
+      }else{
+
+        setMessage(
+          data.error ||
+          "Erro ao reenviar email."
+        );
 
       }
 
-    });
 
 
+    }catch{
 
 
-
-    return NextResponse.json({
-
-      success:true,
-
-      message:
-      "Email verificado com sucesso! Já pode iniciar sessão."
-
-    });
+      setMessage(
+        "Erro ao reenviar email."
+      );
 
 
+    }finally{
 
 
-
-  } catch(error) {
-
-
-    console.error(
-      "VERIFY EMAIL ERROR:",
-      error
-    );
+      setResending(false);
 
 
-    return NextResponse.json(
-
-      {
-        error:
-        "Erro interno ao verificar email."
-      },
-
-      {
-        status:500
-      }
-
-    );
+    }
 
 
   }
+
+
+
+
+
+
+
+
+  if(status==="verifying"){
+
+    return (
+
+      <div className="text-center">
+
+        <Loader2
+          size={45}
+          className="
+          mx-auto
+          animate-spin
+          text-yellow-500
+          mb-5"
+        />
+
+
+        <h1 className="text-2xl font-bold">
+          A verificar email...
+        </h1>
+
+
+        <p className="text-gray-500 mt-2">
+          Aguarde enquanto confirmamos a sua conta.
+        </p>
+
+
+      </div>
+
+    );
+
+  }
+
+
+
+
+
+
+  if(status==="success"){
+
+    return (
+
+      <div className="text-center">
+
+
+        <CheckCircle
+          size={55}
+          className="
+          mx-auto
+          text-green-500
+          mb-5"
+        />
+
+
+        <h1 className="text-2xl font-bold">
+          Email confirmado!
+        </h1>
+
+
+        <p className="text-gray-600 mt-3 mb-8">
+          {message}
+        </p>
+
+
+        <Link href="/login">
+
+          <Button
+            fullWidth
+            size="lg"
+          >
+            Fazer Login
+          </Button>
+
+        </Link>
+
+
+      </div>
+
+    );
+
+  }
+
+
+
+
+
+
+  if(status==="error"){
+
+    return (
+
+      <div className="text-center">
+
+
+        <XCircle
+          size={55}
+          className="
+          mx-auto
+          text-red-500
+          mb-5"
+        />
+
+
+        <h1 className="text-2xl font-bold">
+          Verificação falhou
+        </h1>
+
+
+        <p className="text-gray-600 mt-3 mb-8">
+          {message}
+        </p>
+
+
+        <Link href="/login">
+
+          <Button
+            fullWidth
+          >
+            Voltar ao Login
+          </Button>
+
+        </Link>
+
+
+      </div>
+
+    );
+
+  }
+
+
+
+
+
+
+
+  return (
+
+    <div className="text-center">
+
+
+      <Mail
+        size={55}
+        className="
+        mx-auto
+        text-yellow-500
+        mb-5"
+      />
+
+
+      <h1 className="text-2xl font-bold">
+        Verifique o seu email
+      </h1>
+
+
+      <p className="text-gray-500 mt-3">
+        Enviamos um link de confirmação para:
+      </p>
+
+
+      {
+        email && (
+
+          <p className="font-semibold mt-2 mb-6">
+            {email}
+          </p>
+
+        )
+      }
+
+
+
+      <div className="
+      bg-yellow-50
+      border
+      border-yellow-200
+      rounded-xl
+      p-4
+      mb-6">
+
+
+        <p className="text-sm text-yellow-800">
+
+          Abra o email recebido e clique no link.
+          Verifique também a pasta Spam.
+
+        </p>
+
+
+      </div>
+
+
+
+
+
+      {
+        resent && (
+
+          <p className="
+          text-green-600
+          text-sm
+          mb-4">
+
+            Email reenviado com sucesso!
+
+          </p>
+
+        )
+      }
+
+
+
+
+
+      <button
+
+        onClick={resendEmail}
+
+        disabled={
+          resending ||
+          cooldown > 0
+        }
+
+        className="
+        text-yellow-600
+        font-medium
+        flex
+        items-center
+        justify-center
+        gap-2
+        mx-auto">
+
+        {
+          resending ?
+
+          <Loader2
+            size={16}
+            className="animate-spin"
+          />
+
+          :
+
+          <RefreshCw size={16}/>
+
+        }
+
+
+        {
+          cooldown > 0
+
+          ?
+
+          `Aguarde ${cooldown}s`
+
+          :
+
+          "Reenviar email de verificação"
+
+        }
+
+
+      </button>
+
+
+
+
+      <Link href="/login">
+
+        <Button
+          variant="outline"
+          fullWidth
+          className="mt-6"
+        >
+
+          Já verifiquei - Login
+
+        </Button>
+
+      </Link>
+
+
+    </div>
+
+  );
 
 }
 
@@ -211,241 +489,60 @@ export async function GET(
 
 
 
+// IMPORTANTE PARA O NEXT.JS
+// Este export default resolve o erro da Vercel
 
-// ===============================
-// POST - Reenviar email
-// ===============================
+export default function VerifyEmailPage(){
 
 
-export async function POST(
-  request: NextRequest
-): Promise<NextResponse> {
+  return (
 
+    <main className="
+    min-h-screen
+    bg-gray-50
+    flex
+    items-center
+    justify-center
+    px-4">
 
-  try {
 
+      <div className="
+      w-full
+      max-w-md
+      bg-white
+      border
+      rounded-2xl
+      shadow-sm
+      p-8">
 
-    const body =
-      await request.json();
 
+        <Suspense
+          fallback={
 
+            <div className="text-center">
 
-    const email =
-      body.email
-      ?.toLowerCase()
-      ?.trim();
+              <Loader2
+                className="
+                animate-spin
+                mx-auto
+                text-yellow-500"
+              />
 
+            </div>
 
+          }
+        >
 
+          <VerifyEmailContent />
 
+        </Suspense>
 
-    if (!email) {
 
+      </div>
 
-      return NextResponse.json(
 
-        {
-          error:
-          "Email é obrigatório."
-        },
+    </main>
 
-        {
-          status:400
-        }
-
-      );
-
-
-    }
-
-
-
-
-
-    const user =
-      await prisma.user.findUnique({
-
-        where:{
-          email
-        }
-
-      });
-
-
-
-
-
-
-    /*
-      Não revelar se existe usuário
-    */
-
-    if (!user) {
-
-
-      return NextResponse.json({
-
-        message:
-        "Se o email existir, receberá um novo link."
-
-      });
-
-
-    }
-
-
-
-
-
-
-    if(user.emailVerified){
-
-
-      return NextResponse.json(
-
-        {
-          error:
-          "Este email já foi verificado."
-        },
-
-        {
-          status:400
-        }
-
-      );
-
-
-    }
-
-
-
-
-
-
-
-    // remover tokens antigos
-
-    await prisma.verificationToken.deleteMany({
-
-      where:{
-
-        identifier:
-        email
-
-      }
-
-    });
-
-
-
-
-
-
-
-    // criar novo token
-
-    const token =
-      crypto
-      .randomBytes(32)
-      .toString("hex");
-
-
-
-
-
-
-    await prisma.verificationToken.create({
-
-      data:{
-
-        identifier:
-        email,
-
-        token,
-
-        expires:
-
-        new Date(
-
-          Date.now()
-          +
-          24 *
-          60 *
-          60 *
-          1000
-
-        )
-
-      }
-
-    });
-
-
-
-
-
-
-
-
-    await sendEmailVerification(
-
-      email,
-
-      user.name ||
-      "Cliente",
-
-      token
-
-    );
-
-
-
-
-
-
-
-
-    return NextResponse.json({
-
-      success:true,
-
-      message:
-      "Email de verificação reenviado com sucesso."
-
-    });
-
-
-
-
-
-
-
-
-  } catch(error) {
-
-
-    console.error(
-      "RESEND EMAIL ERROR:",
-      error
-    );
-
-
-
-    return NextResponse.json(
-
-      {
-        error:
-        "Erro interno ao reenviar email."
-      },
-
-      {
-        status:500
-      }
-
-    );
-
-
-  }
-
+  );
 
 }
