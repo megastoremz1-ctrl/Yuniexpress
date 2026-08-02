@@ -15,70 +15,52 @@ import Button from "@/components/ui/Button";
 
 
 function VerifyEmailContent() {
-
   const searchParams = useSearchParams();
 
   const token = searchParams.get("token");
   const email = searchParams.get("email");
 
-
   const [status, setStatus] = useState<
     "pending" | "verifying" | "success" | "error"
   >(token ? "verifying" : "pending");
 
-
   const [message, setMessage] = useState("");
-
   const [resending, setResending] = useState(false);
-
   const [resent, setResent] = useState(false);
-
   const [cooldown, setCooldown] = useState(0);
 
 
-
   useEffect(() => {
-
-    if(token){
+    if (token) {
       verifyEmail(token);
     }
-
   }, [token]);
 
 
-
   useEffect(() => {
-
-    if(cooldown <= 0) return;
-
+    if (cooldown === 0) return;
 
     const timer = setTimeout(() => {
-      setCooldown(cooldown - 1);
-    },1000);
-
+      setCooldown((old) => old - 1);
+    }, 1000);
 
     return () => clearTimeout(timer);
 
-
-  },[cooldown]);
-
+  }, [cooldown]);
 
 
-
-
-  async function verifyEmail(token:string){
+  async function verifyEmail(tokenValue: string) {
 
     try {
 
-      const res = await fetch(
-        `/api/auth/verify-email?token=${token}`
+      const response = await fetch(
+        `/api/auth/verify-email?token=${tokenValue}`
       );
 
+      const data = await response.json();
 
-      const data = await res.json();
 
-
-      if(res.ok){
+      if (response.ok) {
 
         setStatus("success");
 
@@ -87,8 +69,7 @@ function VerifyEmailContent() {
           "Email verificado com sucesso!"
         );
 
-
-      }else{
+      } else {
 
         setStatus("error");
 
@@ -102,158 +83,116 @@ function VerifyEmailContent() {
 
     } catch {
 
-
       setStatus("error");
 
       setMessage(
         "Erro de conexão. Tente novamente."
       );
 
-
     }
-
   }
 
 
 
+  async function resendEmail() {
 
-
-
-  async function resendEmail(){
-
-
-    if(!email || resending || cooldown > 0)
+    if (!email || resending || cooldown > 0) {
       return;
+    }
 
 
     setResending(true);
-
     setResent(false);
 
 
+    try {
 
-    try{
-
-
-      const res = await fetch(
+      const response = await fetch(
         "/api/auth/verify-email",
         {
-          method:"POST",
-          headers:{
-            "Content-Type":"application/json"
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          body:JSON.stringify({
-            email
-          })
+          body: JSON.stringify({
+            email,
+          }),
         }
       );
 
 
-      const data = await res.json();
+      const data = await response.json();
 
 
-
-      if(res.ok){
+      if (response.ok) {
 
         setResent(true);
-
         setCooldown(60);
 
-
-      }else{
+      } else {
 
         setMessage(
           data.error ||
-          "Erro ao reenviar email."
+          "Não foi possível reenviar."
         );
 
       }
 
 
-
-    }catch{
-
+    } catch {
 
       setMessage(
         "Erro ao reenviar email."
       );
 
-
-    }finally{
-
+    } finally {
 
       setResending(false);
 
-
     }
-
 
   }
 
 
 
-
-
-
-
-
-  if(status==="verifying"){
+  if (status === "verifying") {
 
     return (
-
       <div className="text-center">
 
         <Loader2
-          size={45}
-          className="
-          mx-auto
-          animate-spin
-          text-yellow-500
-          mb-5"
+          size={48}
+          className="mx-auto mb-5 animate-spin text-yellow-500"
         />
-
 
         <h1 className="text-2xl font-bold">
           A verificar email...
         </h1>
 
-
         <p className="text-gray-500 mt-2">
           Aguarde enquanto confirmamos a sua conta.
         </p>
 
-
       </div>
-
     );
 
   }
 
 
 
-
-
-
-  if(status==="success"){
+  if (status === "success") {
 
     return (
-
       <div className="text-center">
-
 
         <CheckCircle
           size={55}
-          className="
-          mx-auto
-          text-green-500
-          mb-5"
+          className="mx-auto mb-5 text-green-500"
         />
-
 
         <h1 className="text-2xl font-bold">
           Email confirmado!
         </h1>
-
 
         <p className="text-gray-600 mt-3 mb-8">
           {message}
@@ -271,38 +210,26 @@ function VerifyEmailContent() {
 
         </Link>
 
-
       </div>
-
     );
 
   }
 
 
 
-
-
-
-  if(status==="error"){
+  if (status === "error") {
 
     return (
-
       <div className="text-center">
-
 
         <XCircle
           size={55}
-          className="
-          mx-auto
-          text-red-500
-          mb-5"
+          className="mx-auto mb-5 text-red-500"
         />
-
 
         <h1 className="text-2xl font-bold">
           Verificação falhou
         </h1>
-
 
         <p className="text-gray-600 mt-3 mb-8">
           {message}
@@ -319,30 +246,19 @@ function VerifyEmailContent() {
 
         </Link>
 
-
       </div>
-
     );
 
   }
 
 
 
-
-
-
-
   return (
-
     <div className="text-center">
-
 
       <Mail
         size={55}
-        className="
-        mx-auto
-        text-yellow-500
-        mb-5"
+        className="mx-auto mb-5 text-yellow-500"
       />
 
 
@@ -356,109 +272,55 @@ function VerifyEmailContent() {
       </p>
 
 
-      {
-        email && (
-
-          <p className="font-semibold mt-2 mb-6">
-            {email}
-          </p>
-
-        )
-      }
+      {email && (
+        <p className="font-semibold mt-2 mb-6">
+          {email}
+        </p>
+      )}
 
 
 
-      <div className="
-      bg-yellow-50
-      border
-      border-yellow-200
-      rounded-xl
-      p-4
-      mb-6">
-
+      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
 
         <p className="text-sm text-yellow-800">
-
-          Abra o email recebido e clique no link.
+          Clique no link recebido no email.
           Verifique também a pasta Spam.
-
         </p>
-
 
       </div>
 
 
 
-
-
-      {
-        resent && (
-
-          <p className="
-          text-green-600
-          text-sm
-          mb-4">
-
-            Email reenviado com sucesso!
-
-          </p>
-
-        )
-      }
-
-
+      {resent && (
+        <p className="text-green-600 text-sm mb-4">
+          Email reenviado com sucesso!
+        </p>
+      )}
 
 
 
       <button
-
         onClick={resendEmail}
+        disabled={resending || cooldown > 0}
+        className="text-yellow-600 font-medium flex items-center justify-center gap-2 mx-auto"
+      >
 
-        disabled={
-          resending ||
-          cooldown > 0
-        }
-
-        className="
-        text-yellow-600
-        font-medium
-        flex
-        items-center
-        justify-center
-        gap-2
-        mx-auto">
-
-        {
-          resending ?
-
+        {resending ? (
           <Loader2
             size={16}
             className="animate-spin"
           />
-
-          :
-
+        ) : (
           <RefreshCw size={16}/>
+        )}
 
+
+        {cooldown > 0
+          ? `Aguarde ${cooldown}s`
+          : "Reenviar email de verificação"
         }
-
-
-        {
-          cooldown > 0
-
-          ?
-
-          `Aguarde ${cooldown}s`
-
-          :
-
-          "Reenviar email de verificação"
-
-        }
-
 
       </button>
-
 
 
 
@@ -469,67 +331,37 @@ function VerifyEmailContent() {
           fullWidth
           className="mt-6"
         >
-
           Já verifiquei - Login
-
         </Button>
 
       </Link>
 
 
     </div>
-
   );
-
 }
 
 
 
-
-
-
-
-// IMPORTANTE PARA O NEXT.JS
-// Este export default resolve o erro da Vercel
-
-export default function VerifyEmailPage(){
-
+export default function VerifyEmailPage() {
 
   return (
 
-    <main className="
-    min-h-screen
-    bg-gray-50
-    flex
-    items-center
-    justify-center
-    px-4">
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
 
-
-      <div className="
-      w-full
-      max-w-md
-      bg-white
-      border
-      rounded-2xl
-      shadow-sm
-      p-8">
+      <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-8">
 
 
         <Suspense
           fallback={
-
             <div className="text-center">
 
               <Loader2
-                className="
-                animate-spin
-                mx-auto
-                text-yellow-500"
+                size={35}
+                className="animate-spin mx-auto text-yellow-500"
               />
 
             </div>
-
           }
         >
 
@@ -539,7 +371,6 @@ export default function VerifyEmailPage(){
 
 
       </div>
-
 
     </main>
 
