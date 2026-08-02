@@ -5,37 +5,51 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import toast from "react-hot-toast";
+
 import {
   Mail,
   Lock,
   Eye,
   EyeOff,
-  Package
+  Package,
+  AlertCircle,
 } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
 
+
 export default function LoginPage() {
+
 
   const router = useRouter();
 
-  const [email,setEmail] = useState("");
-  const [password,setPassword] = useState("");
 
-  const [showPassword,setShowPassword] = useState(false);
-  const [loading,setLoading] = useState(false);
+  const [email,setEmail] =
+    useState("");
+
+  const [password,setPassword] =
+    useState("");
+
+  const [showPassword,setShowPassword] =
+    useState(false);
+
+  const [loading,setLoading] =
+    useState(false);
 
 
 
-  async function handleSubmit(
-    e: React.FormEvent
-  ){
+  const handleSubmit = async(
+    e:React.FormEvent
+  )=>{
+
 
     e.preventDefault();
 
+
     setLoading(true);
+
 
 
     try{
@@ -53,32 +67,26 @@ export default function LoginPage() {
 
 
 
-      if(result?.error){
 
 
-        /*
-          Cliente sem email confirmado
-        */
-
-        if(
-          result.error.includes(
-            "EMAIL_NOT_VERIFIED"
-          )
-        ){
-
-          router.push(
-            `/verify-email?email=${encodeURIComponent(email)}`
-          );
-
-          return;
-
-        }
+      /*
+        Email não verificado
+      */
 
 
+      if(
+        result?.error
+        &&
+        result.error.includes(
+          "EMAIL_NOT_VERIFIED"
+        )
+      ){
 
-        toast.error(
-          "Email ou password incorretos"
+
+        router.push(
+          `/verify-email?email=${encodeURIComponent(email)}`
         );
+
 
         return;
 
@@ -86,8 +94,36 @@ export default function LoginPage() {
 
 
 
+
+
+      /*
+        Login errado
+      */
+
+
+      if(result?.error){
+
+
+        toast.error(
+          "Email ou password incorretos."
+        );
+
+
+        return;
+
+      }
+
+
+
+
+
+      /*
+        Login sucesso
+      */
+
+
       toast.success(
-        "Login efectuado com sucesso!"
+        "Login efetuado com sucesso!"
       );
 
 
@@ -97,20 +133,32 @@ export default function LoginPage() {
 
 
 
+
     }catch(error){
 
+
+      console.error(
+        "LOGIN ERROR:",
+        error
+      );
+
+
       toast.error(
-        "Erro ao iniciar sessão"
+        "Erro ao iniciar sessão."
       );
 
 
     }finally{
 
+
       setLoading(false);
+
 
     }
 
-  }
+
+  };
+
 
 
 
@@ -134,6 +182,7 @@ export default function LoginPage() {
       ">
 
 
+
         {/* Logo */}
 
         <div className="
@@ -141,26 +190,27 @@ export default function LoginPage() {
           mb-8
         ">
 
-          <Link
-            href="/"
-            className="
-              inline-flex
-              items-center
-              gap-2
-            "
-          >
+
+          <Link href="/">
 
             <img
+
               src="/icons/icon-192x192.png"
+
               alt="YuniExpress"
+
               className="
                 w-14
                 h-14
                 rounded-xl
+                mx-auto
               "
+
             />
 
           </Link>
+
+
 
 
           <h1 className="
@@ -174,6 +224,7 @@ export default function LoginPage() {
           </h1>
 
 
+
           <p className="
             text-gray-500
             mt-1
@@ -184,13 +235,19 @@ export default function LoginPage() {
           </p>
 
 
+
         </div>
 
 
 
 
+
+
+
         <form
+
           onSubmit={handleSubmit}
+
           className="
             bg-white
             p-8
@@ -198,11 +255,15 @@ export default function LoginPage() {
             border
             shadow-sm
           "
+
         >
 
 
 
+
+
           <div className="space-y-4">
+
 
 
             <Input
@@ -214,10 +275,14 @@ export default function LoginPage() {
               value={email}
 
               onChange={
-                e=>setEmail(e.target.value)
+                e=>setEmail(
+                  e.target.value
+                )
               }
 
-              placeholder="seu@email.com"
+              placeholder="
+              seuemail@gmail.com
+              "
 
               icon={
                 <Mail size={18}/>
@@ -226,6 +291,8 @@ export default function LoginPage() {
               required
 
             />
+
+
 
 
 
@@ -248,7 +315,9 @@ export default function LoginPage() {
                 value={password}
 
                 onChange={
-                  e=>setPassword(e.target.value)
+                  e=>setPassword(
+                    e.target.value
+                  )
                 }
 
                 placeholder="Sua password"
@@ -268,7 +337,9 @@ export default function LoginPage() {
                 type="button"
 
                 onClick={
-                  ()=>setShowPassword(!showPassword)
+                  ()=>setShowPassword(
+                    !showPassword
+                  )
                 }
 
                 className="
@@ -288,13 +359,19 @@ export default function LoginPage() {
                   <Eye size={18}/>
                 }
 
+
               </button>
 
 
             </div>
 
 
+
+
           </div>
+
+
+
 
 
 
@@ -304,12 +381,16 @@ export default function LoginPage() {
             mt-3
           ">
 
+
             <Link
+
               href="/forgot-password"
+
               className="
                 text-sm
                 text-yellow-600
               "
+
             >
 
               Esqueceu a password?
@@ -322,6 +403,9 @@ export default function LoginPage() {
 
 
 
+
+
+
           <Button
 
             type="submit"
@@ -330,9 +414,9 @@ export default function LoginPage() {
 
             loading={loading}
 
-            className="mt-6"
-
             size="lg"
+
+            className="mt-6"
 
           >
 
@@ -343,39 +427,127 @@ export default function LoginPage() {
 
 
 
+
+
+
+
           <div className="
-            text-center
-            mt-6
-            text-sm
-            text-gray-500
+            relative
+            my-6
           ">
 
+            <div className="
+              border-t
+            "/>
 
-            Não tem conta?
 
+            <span className="
+              absolute
+              left-1/2
+              -translate-x-1/2
+              -top-3
+              bg-white
+              px-3
+              text-sm
+              text-gray-500
+            ">
 
-            <Link
+              ou
 
-              href="/register"
-
-              className="
-                text-yellow-600
-                font-medium
-                ml-1
-              "
-
-            >
-
-              Registar-se
-
-            </Link>
+            </span>
 
 
           </div>
 
 
 
+
+
+
+
+
+          <button
+
+            type="button"
+
+            onClick={
+              ()=>signIn(
+                "google",
+                {
+                  callbackUrl:"/"
+                }
+              )
+            }
+
+
+            className="
+              w-full
+              flex
+              items-center
+              justify-center
+              gap-3
+              border-2
+              rounded-lg
+              py-3
+              hover:bg-gray-50
+            "
+
+          >
+
+
+            <span>
+              🇬🇴
+            </span>
+
+
+            Continuar com Google
+
+
+          </button>
+
+
+
+
+
+
         </form>
+
+
+
+
+
+
+        <p className="
+          text-center
+          mt-6
+          text-sm
+          text-gray-500
+        ">
+
+
+          Não tem uma conta?
+
+
+          <Link
+
+            href="/register"
+
+            className="
+              text-yellow-600
+              font-medium
+              ml-1
+            "
+
+          >
+
+            Registar-se
+
+          </Link>
+
+
+
+        </p>
+
 
 
       </div>
