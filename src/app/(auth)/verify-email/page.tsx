@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Mail,
@@ -11,17 +11,24 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+
 function VerifyEmailContent() {
+
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const token = searchParams.get("token");
   const emailParam = searchParams.get("email");
 
-  const [email, setEmail] = useState(emailParam ?? "");
+
+  const [email, setEmail] = useState(emailParam || "");
 
   const [status, setStatus] = useState<
     "loading" | "waiting" | "success" | "error"
-  >(token ? "loading" : "waiting");
+  >(
+    token ? "loading" : "waiting"
+  );
+
 
   const [message, setMessage] = useState("");
 
@@ -31,272 +38,491 @@ function VerifyEmailContent() {
 
   const [timer, setTimer] = useState(0);
 
-  // ------------------------
-  // Verificar Token
-  // ------------------------
-  const verifyToken = useCallback(async () => {
-    if (!token) return;
 
-    try {
-      const response = await fetch(
-        `/api/auth/verify-email?token=${encodeURIComponent(token)}`
-      );
 
-      let data = {};
+  useEffect(() => {
 
-      try {
-        data = await response.json();
-      } catch {}
+    if(token){
 
-      if (response.ok) {
-        setStatus("success");
-        setMessage(
-          (data as any).message ?? "Email verificado com sucesso."
-        );
-      } else {
-        setStatus("error");
-        setMessage(
-          (data as any).error ?? "Token inválido ou expirado."
-        );
-      }
-    } catch {
-      setStatus("error");
-      setMessage("Erro de conexão.");
+      verifyToken();
+
     }
+
   }, [token]);
 
+
+
+
   useEffect(() => {
-    verifyToken();
-  }, [verifyToken]);
 
-  // ------------------------
-  // Timer
-  // ------------------------
-  useEffect(() => {
-    if (timer <= 0) return;
+    if(timer <= 0) return;
 
-    const interval = setInterval(() => {
-      setTimer((value) => Math.max(value - 1, 0));
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [timer]);
+    const interval = setInterval(()=>{
 
-  // ------------------------
-  // Reenviar Email
-  // ------------------------
-  async function resend() {
-    if (!email.trim()) {
-      setMessage("Informe um email.");
-      return;
-    }
+      setTimer(value => value - 1);
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    },1000);
 
-    if (!emailRegex.test(email)) {
-      setMessage("Email inválido.");
-      return;
-    }
 
-    if (sending || timer > 0) return;
+    return ()=>clearInterval(interval);
 
-    try {
-      setSending(true);
-      setSent(false);
-      setMessage("");
 
-      const response = await fetch("/api/auth/verify-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+  },[timer]);
 
-      let data = {};
 
-      try {
-        data = await response.json();
-      } catch {}
 
-      if (response.ok) {
-        setSent(true);
-        setTimer(60);
-      } else {
+
+
+  async function verifyToken(){
+
+    try{
+
+      const response = await fetch(
+        `/api/auth/verify-email?token=${token}`
+      );
+
+
+      const data = await response.json();
+
+
+
+      if(response.ok){
+
+        setStatus("success");
+
         setMessage(
-          (data as any).error ?? "Erro ao reenviar email."
+          data.message ||
+          "Email verificado com sucesso."
         );
+
+
+      }else{
+
+
+        setStatus("error");
+
+        setMessage(
+          data.error ||
+          "Token inválido."
+        );
+
+
       }
-    } catch {
-      setMessage("Erro ao reenviar email.");
-    } finally {
-      setSending(false);
+
+
+
+    }catch{
+
+
+      setStatus("error");
+
+      setMessage(
+        "Erro de conexão."
+      );
+
+
     }
+
+
   }
 
-  // ------------------------
-  // Loading
-  // ------------------------
-  if (status === "loading") {
+
+
+
+
+  async function resend(){
+
+
+    if(
+      !email ||
+      sending ||
+      timer > 0
+    ){
+
+      return;
+
+    }
+
+
+
+    try{
+
+
+      setSending(true);
+
+      setSent(false);
+
+
+
+      const response = await fetch(
+        "/api/auth/verify-email",
+        {
+
+          method:"POST",
+
+          headers:{
+            "Content-Type":"application/json"
+          },
+
+          body:JSON.stringify({
+            email
+          })
+
+        }
+      );
+
+
+
+      const data = await response.json();
+
+
+
+      if(response.ok){
+
+
+        setSent(true);
+
+        setTimer(60);
+
+
+
+      }else{
+
+
+        setMessage(
+          data.error ||
+          "Erro ao enviar email."
+        );
+
+
+      }
+
+
+
+
+    }catch{
+
+
+      setMessage(
+        "Erro ao enviar email."
+      );
+
+
+    }finally{
+
+
+      setSending(false);
+
+
+    }
+
+
+  }
+
+
+
+
+
+  if(status === "loading"){
+
     return (
+
       <div className="text-center">
+
         <Loader2
           className="mx-auto animate-spin text-yellow-500"
           size={45}
         />
 
+
         <h1 className="text-xl font-bold mt-5">
           A verificar email...
         </h1>
+
       </div>
+
     );
+
   }
 
-  // ------------------------
-  // Sucesso
-  // ------------------------
-  if (status === "success") {
+
+
+
+
+  if(status === "success"){
+
+
     return (
+
       <div className="text-center">
+
+
         <CheckCircle
           size={55}
           className="mx-auto text-green-500"
         />
 
+
         <h1 className="text-2xl font-bold mt-5">
           Email confirmado
         </h1>
+
 
         <p className="text-gray-600 mt-3 mb-6">
           {message}
         </p>
 
+
         <Link
           href="/login"
-          className="block w-full rounded-lg bg-yellow-500 py-3 text-white"
+          className="block w-full bg-yellow-500 text-white py-3 rounded-lg"
         >
+
           Fazer Login
+
         </Link>
+
+
       </div>
+
     );
+
+
   }
 
-  // ------------------------
-  // Erro
-  // ------------------------
-  if (status === "error") {
+
+
+
+
+  if(status === "error"){
+
+
     return (
+
       <div className="text-center">
+
+
         <XCircle
           size={55}
           className="mx-auto text-red-500"
         />
 
+
         <h1 className="text-2xl font-bold mt-5">
           Erro na verificação
         </h1>
+
 
         <p className="text-gray-600 mt-3 mb-6">
           {message}
         </p>
 
+
         <Link
           href="/login"
-          className="block rounded-lg border py-3"
+          className="block w-full border py-3 rounded-lg"
         >
-          Voltar ao Login
+
+          Voltar Login
+
         </Link>
+
+
       </div>
+
     );
+
+
   }
 
-  // ------------------------
-  // Esperando confirmação
-  // ------------------------
+
+
+
+
   return (
+
     <div className="text-center">
+
+
       <Mail
         size={55}
         className="mx-auto text-yellow-500"
       />
 
-      <h1 className="mt-5 text-2xl font-bold">
+
+
+      <h1 className="text-2xl font-bold mt-5">
         Verifique o seu email
       </h1>
 
-      <p className="mt-3 text-gray-500">
-        Enviamos um link de confirmação para o seu email.
+
+
+      <p className="text-gray-500 mt-3">
+        Enviamos um link de confirmação.
       </p>
 
+
+
       <input
+
         type="email"
+
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+
+        onChange={(e)=>setEmail(e.target.value)}
+
         placeholder="Seu email"
-        className="mt-5 w-full rounded-lg border px-4 py-3"
+
+        className="mt-5 w-full border rounded-lg px-4 py-3"
+
       />
 
-      {message && (
-        <p
-          className={`mt-4 text-sm ${
-            sent ? "text-green-600" : "text-red-500"
-          }`}
-        >
-          {message}
-        </p>
-      )}
+
+
 
       {sent && (
-        <p className="mt-2 text-sm text-green-600">
+
+        <p className="text-green-600 text-sm mt-4">
+
           Email reenviado com sucesso.
+
         </p>
+
       )}
 
+
+
+
       <button
+
         onClick={resend}
-        disabled={sending || timer > 0}
-        className="mx-auto mt-5 flex items-center justify-center gap-2 text-yellow-600 disabled:opacity-50"
+
+        disabled={
+          sending ||
+          timer > 0
+        }
+
+        className="
+        mt-5
+        text-yellow-600
+        flex
+        items-center
+        justify-center
+        gap-2
+        mx-auto
+        "
+
       >
-        {sending ? (
+
+
+        {
+          sending ?
+
           <Loader2
             size={16}
             className="animate-spin"
           />
-        ) : (
-          <RefreshCw size={16} />
-        )}
 
-        {timer > 0 ? `Aguarde ${timer}s` : "Reenviar email"}
+          :
+
+          <RefreshCw size={16}/>
+
+        }
+
+
+        {
+          timer > 0
+          ?
+          `Aguarde ${timer}s`
+          :
+          "Reenviar email"
+        }
+
+
       </button>
 
+
+
+
       <Link
+
         href="/login"
-        className="mt-6 block rounded-lg border py-3"
+
+        className="block mt-6 border py-3 rounded-lg"
+
       >
+
         Já confirmei - Login
+
       </Link>
+
+
     </div>
+
   );
+
+
 }
 
-export default function VerifyEmailPage() {
+
+
+
+
+export default function VerifyEmailPage(){
+
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
+
+    <main className="
+    min-h-screen
+    bg-gray-50
+    flex
+    items-center
+    justify-center
+    px-4
+    ">
+
+
+      <div className="
+      bg-white
+      rounded-2xl
+      border
+      shadow-sm
+      p-8
+      w-full
+      max-w-md
+      ">
+
+
         <Suspense
+
           fallback={
+
             <div className="text-center">
+
               <Loader2
-                className="mx-auto animate-spin text-yellow-500"
+                className="animate-spin mx-auto text-yellow-500"
                 size={35}
               />
+
             </div>
+
           }
+
         >
+
           <VerifyEmailContent />
+
         </Suspense>
+
+
       </div>
+
+
     </main>
+
   );
+
+
 }
