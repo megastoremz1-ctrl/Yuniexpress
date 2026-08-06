@@ -207,11 +207,11 @@ export const {
 
               name:user.name,
 
-              avatar:user.image,
+              image:user.image,
 
               emailVerified:new Date(),
 
-              role:"CLIENT",
+              role:"CUSTOMER",
 
             }
 
@@ -231,27 +231,22 @@ export const {
 
 
 
-    async jwt({
-      token,
-      user
-    }) {
+ async jwt({
+  token,
+  user
+}) {
 
+  if(user){
 
-      if(user){
+    token.id = String(user.id);
 
-        token.id =
-          user.id;
+    token.role = String(user.role);
 
+  }
 
-        token.role =
-          user.role;
+  return token;
 
-      }
-
-
-      return token;
-
-    },
+},
 
 
 
