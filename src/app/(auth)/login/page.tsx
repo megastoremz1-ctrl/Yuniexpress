@@ -56,8 +56,16 @@ export default function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setError("");
-    setEmailNotVerified(false);
+      setLoading(true);
+  setError("");
+  setEmailNotVerified(false);
+
+  try {
+    const result = await signIn("credentials", {
+      email: email.trim().toLowerCase(),
+      password,
+      redirect: false,
+    });
 
     if (!email.trim()) {
       setError("Digite o seu email.");
@@ -69,64 +77,44 @@ export default function LoginPage() {
       return;
     }
 
-    setLoading(true);
 
-    try {
-      const result = await signIn("credentials", {
-        email: email.trim().toLowerCase(),
-        password,
-        redirect: false,
-      });
-
-      if (!result) {
-        setError("Não foi possível iniciar sessão.");
-        return;
-      }
-
-      /**
-       * Email ainda não verificado.
-       *
-       * O auth.ts deve devolver:
-       * EMAIL_NOT_VERIFIED
-       */
-      if (
-        result.error === "EMAIL_NOT_VERIFIED" ||
-        result.code === "EMAIL_NOT_VERIFIED"
-      ) {
-        setEmailNotVerified(true);
-
-        setError(
-          "O seu email ainda não foi verificado. Verifique a sua caixa de entrada."
-        );
-
-        return;
-      }
-
-      /**
-       * Credenciais incorretas
-       */
-      if (result.error) {
-        setError("Email ou password incorretos.");
-        return;
-      }
-
-      /**
-       * Login realizado
-       */
-      router.push("/");
-
-      router.refresh();
-    } catch (err) {
-      console.error("Login error:", err);
-
-      setError(
-        "Ocorreu um erro ao iniciar sessão. Tente novamente."
-      );
-    } finally {
-      setLoading(false);
+    if (!result) {
+      setError("Não foi possível iniciar sessão.");
+      return;
     }
-  }
 
+    console.log(result);
+
+    // Email não verificado
+    if (
+      result.error === "EMAIL_NOT_VERIFIED" ||
+      result.error?.includes("EMAIL_NOT_VERIFIED")
+    ) {
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email.trim())}`
+      );
+      return;
+    }
+
+    // Credenciais inválidas
+    if (result.error) {
+      setError("Email ou password incorretos.");
+      return;
+    }
+
+    // Login com sucesso
+    router.push("/");
+    router.refresh();
+  } catch (error) {
+    console.error(error);
+
+    setError(
+      "Ocorreu um erro ao iniciar sessão. Tente novamente."
+    );
+  } finally {
+    setLoading(false);
+  }
+}
   /**
    * Login com Google
    */
