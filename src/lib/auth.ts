@@ -336,19 +336,9 @@ export const {
          *
          * /verify-email?email=...
          */
-        if (
-          !databaseUser.emailVerified &&
-          !isAdmin
-        ) {
-          const baseUrl =
-            process.env.NEXT_PUBLIC_APP_URL ||
-            process.env.AUTH_URL ||
-            "https://www.yuniexpress.shop";
-
-          return `${baseUrl}/verify-email?email=${encodeURIComponent(
-            databaseUser.email
-          )}`;
-        }
+     if (!databaseUser.emailVerified && !isAdmin) {
+  throw new Error("EMAIL_NOT_VERIFIED");
+}
 
         /**
          * Atualizar informações para o JWT.
