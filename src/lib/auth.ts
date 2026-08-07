@@ -74,26 +74,29 @@ const providers = [
         throw new Error("INVALID_CREDENTIALS");
       }
 
-      /**
-       * IMPORTANTE
-       *
-       * Não bloqueamos aqui o usuário com email
-       * não verificado.
-       *
-       * Vamos deixar o callback signIn decidir
-       * para podermos redirecionar para:
-       *
-       * /verify-email?email=...
-       */
+     /**
+ * ADMIN e SUPER_ADMIN podem entrar
+ * sem confirmar o email.
+ */
+const isAdmin =
+  user.role === "ADMIN" ||
+  user.role === "SUPER_ADMIN";
 
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      } as any;
+/**
+ * CUSTOMER precisa confirmar o email.
+ */
+if (!user.emailVerified && !isAdmin) {
+  throw new Error("EMAIL_NOT_VERIFIED");
+}
+
+return {
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  image: user.image,
+  role: user.role,
+  emailVerified: user.emailVerified,
+} as any;
     },
   }),
 
@@ -323,40 +326,16 @@ export const {
           databaseUser.role === "ADMIN" ||
           databaseUser.role === "SUPER_ADMIN";
 
-        /**
-         * ========================================
-         * EMAIL NÃO VERIFICADO
-         * ========================================
-         *
-         * Em vez de mostrar:
-         *
-         * "Email ou password incorretos"
-         *
-         * vamos mandar diretamente para:
-         *
-         * /verify-email?email=...
-         */
-     if (!databaseUser.emailVerified && !isAdmin) {
-  throw new Error("EMAIL_NOT_VERIFIED");
+   /**
+ * ========================================
+ * LOGIN COM EMAIL/PASSWORD
+ * ========================================
+ *
+ * Toda a validação já foi feita no authorize().
+ */
+if (account?.provider === "credentials") {
+  return true;
 }
-
-        /**
-         * Atualizar informações para o JWT.
-         */
-        user.id = databaseUser.id;
-
-        (user as any).role =
-          databaseUser.role;
-
-        (user as any).emailVerified =
-          databaseUser.emailVerified;
-
-        return true;
-      }
-
-      return true;
-    },
-
     /**
      * ============================
      * JWT
