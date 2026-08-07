@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -14,7 +14,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -481,7 +481,22 @@ export default function LoginPage() {
     </main>
   );
 }
-
+ export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Loader2
+            className="animate-spin text-yellow-500"
+            size={40}
+          />
+        </main>
+      }
+    >
+      <LoginContent />
+    </Suspense>
+  );
+}
 /**
  * ÍCONE OFICIAL DO GOOGLE
  *
