@@ -86,15 +86,21 @@ function LoginContent() {
     console.log(result);
 
     // Email não verificado
-    if (
-      result.error === "EMAIL_NOT_VERIFIED" ||
-      result.error?.includes("EMAIL_NOT_VERIFIED")
-    ) {
-      router.push(
-        `/verify-email?email=${encodeURIComponent(email.trim())}`
-      );
-      return;
-    }
+ console.log("RESULTADO COMPLETO:", result);
+console.log("ERROR:", result?.error);
+console.log("CODE:", (result as any)?.code);
+
+const authResult = result as typeof result & {
+  code?: string;
+};
+
+if (authResult.code === "EMAIL_NOT_VERIFIED") {
+  console.log(">>> REDIRECIONANDO");
+  router.push(
+    `/verify-email?email=${encodeURIComponent(email.trim())}`
+  );
+  return;
+}
 
     // Credenciais inválidas
     if (result.error) {
