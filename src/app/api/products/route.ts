@@ -323,6 +323,127 @@ function diversifyProducts(
   return result;
 }
 
+
+/**
+ * ============================================================
+ * MISTURA DE RESULTADOS DE PESQUISA
+ * ============================================================
+ *
+ * A relevância é calculada primeiro.
+ * Só depois misturamos as categorias.
+ *
+ * Isto evita colocar produtos aleatórios na pesquisa.
+ * A pesquisa continua sendo relevante, mas não deixa
+ * uma única categoria ocupar todos os primeiros lugares.
+ */
+function diversifySearchResults(
+  scoredProducts: {
+    product: any;
+    score: number;
+  }[]
+): {
+  product: any;
+  score: number;
+}[] {
+  if (!scoredProducts.length) {
+    return [];
+  }
+
+  /**
+   * Agrupar por categoria.
+   */
+  const groups = new Map<
+    string,
+    {
+      product: any;
+      score: number;
+    }[]
+  >();
+
+  for (const item of scoredProducts) {
+    const categoryId =
+      item.product.category?.id ||
+      item.product.category?.slug ||
+      "uncategorized";
+
+    if (!groups.has(categoryId)) {
+      groups.set(categoryId, []);
+    }
+
+    groups.get(categoryId)!.push(item);
+  }
+
+  /**
+   * Manter os melhores resultados dentro de cada categoria.
+   */
+  for (const [, list] of groups) {
+    list.sort(
+      (a, b) => b.score - a.score
+    );
+  }
+
+  /**
+   * A categoria cujo melhor produto tem maior relevância
+   * começa primeiro.
+   */
+  const categories = Array.from(
+    groups.keys()
+  ).sort((a, b) => {
+    const bestA =
+      groups.get(a)?.[0]?.score || 0;
+
+    const bestB =
+      groups.get(b)?.[0]?.score || 0;
+
+    return bestB - bestA;
+  });
+
+  const indexes = new Map<string, number>();
+
+  for (const category of categories) {
+    indexes.set(category, 0);
+  }
+
+  const result: {
+    product: any;
+    score: number;
+  }[] = [];
+
+  /**
+   * Round-robin entre categorias.
+   */
+  while (
+    result.length < scoredProducts.length
+  ) {
+    let added = false;
+
+    for (const category of categories) {
+      const list =
+        groups.get(category) || [];
+
+      const index =
+        indexes.get(category) || 0;
+
+      if (index < list.length) {
+        result.push(list[index]);
+
+        indexes.set(
+          category,
+          index + 1
+        );
+
+        added = true;
+      }
+    }
+
+    if (!added) {
+      break;
+    }
+  }
+
+  return result;
+}
+
 /**
  * ============================================================
  * API
@@ -646,16 +767,32 @@ export async function GET(
 
     /**
      * ========================================================
-     * PESQUISA COM RELEVÂNCIA
+     * PESQUISA COM RELEVÂNCIA + MISTURA DE CATEGORIAS
      * ========================================================
+     *
+     * Fluxo:
+     *
+     * 1. Encontrar candidatos no banco
+     * 2. Calcular relevância
+     * 3. Eliminar resultados muito fracos
+     * 4. Misturar categorias
+     * 5. Paginar somente depois da mistura
+     *
+     * Assim a pesquisa continua relevante e, ao mesmo tempo,
+     * evita que uma única categoria domine todos os resultados.
      */
 
     if (search) {
       /**
-       * Buscar um conjunto maior de candidatos.
+       * ======================================================
+       * BUSCAR CANDIDATOS
+       * ======================================================
        *
-       * Depois calculamos a relevância em memória.
+       * Procuramos até 500 candidatos antes de paginar.
+       * Isso é importante porque a página 1 não deve decidir
+       * sozinha quais produtos serão considerados relevantes.
        */
+
       const candidates =
         await prisma.product.findMany({
           where,
@@ -687,13 +824,15 @@ export async function GET(
         });
 
       /**
-       * Calcular relevância
+       * ======================================================
+       * CALCULAR RELEVÂNCIA
+       * ======================================================
        */
+
       const scored =
         candidates
           .map((product: any) => ({
             product,
-
             score:
               calculateRelevance(
                 product,
@@ -701,25 +840,180 @@ export async function GET(
               ),
           }))
           .filter(
-            (item) =>
-              item.score > 0
+            (item) => item.score > 0
           )
           .sort(
             (a, b) =>
               b.score - a.score
           );
 
+      /**
+       * ======================================================
+       * FILTRO DE RELEVÂNCIA
+       * ======================================================
+       *
+       * Para pesquisas com várias palavras, damos prioridade
+       * a produtos cuja correspondência aparece no título,
+       * categoria ou tags.
+       *
+       * Exemplo:
+       *
+       * "iphone 15"
+       *
+       * Deve privilegiar:
+       * - iPhone 15
+       * - Case iPhone 15
+       * - Capa iPhone 15
+       * - Cabo para iPhone 15
+       *
+       * e não simplesmente qualquer produto que tenha uma
+       * ocorrência fraca no texto.
+       */
+
+      const queryWords =
+        tokenize(search);
+
+      const filtered =
+        scored.filter(
+          ({ product, score }) => {
+            const title =
+              normalizeText(
+                product.title || ""
+              );
+
+            const titleEn =
+              normalizeText(
+                product.titleEn || ""
+              );
+
+            const category =
+              normalizeText(
+                product.category?.name || ""
+              );
+
+            const categorySlug =
+              normalizeText(
+                product.category?.slug || ""
+              );
+
+            const tags =
+              Array.isArray(product.tags)
+                ? product.tags.map(
+                    (tag: any) =>
+                      normalizeText(
+                        tag.tag || ""
+                      )
+                  )
+                : [];
+
+            /**
+             * Pesquisa com várias palavras.
+             */
+            if (queryWords.length > 1) {
+              const titleMatch =
+                queryWords.some(
+                  (word) =>
+                    title.includes(word) ||
+                    titleEn.includes(word)
+                );
+
+              const categoryMatch =
+                queryWords.some(
+                  (word) =>
+                    category.includes(word) ||
+                    categorySlug.includes(word)
+                );
+
+              const tagMatch =
+                queryWords.some(
+                  (word) =>
+                    tags.some(
+                      (tag: string) =>
+                        tag.includes(word)
+                    )
+                );
+
+              /**
+               * Correspondência forte.
+               */
+              if (
+                titleMatch ||
+                categoryMatch ||
+                tagMatch
+              ) {
+                return true;
+              }
+
+              /**
+               * Fallback para produtos cuja relevância
+               * veio de uma descrição muito boa.
+               */
+              return score >= 150;
+            }
+
+            /**
+             * Pesquisa de uma única palavra.
+             * Mantemos mais flexível.
+             */
+            return true;
+          }
+        );
+
+      /**
+       * ======================================================
+       * FALLBACK
+       * ======================================================
+       *
+       * Se o filtro ficou vazio, usamos os resultados
+       * relevantes originais. Isso evita mostrar uma página
+       * vazia quando a pesquisa é válida mas o produto só
+       * corresponde pela descrição.
+       */
+
+      const searchResults =
+        filtered.length > 0
+          ? filtered
+          : scored;
+
+      /**
+       * ======================================================
+       * MISTURAR CATEGORIAS
+       * ======================================================
+       *
+       * A relevância já foi calculada acima.
+       * Aqui apenas distribuímos os resultados entre categorias.
+       */
+
+      const diversified =
+        diversifySearchResults(
+          searchResults
+        );
+
+      /**
+       * ======================================================
+       * PAGINAÇÃO
+       * ======================================================
+       *
+       * A paginação acontece DEPOIS da mistura.
+       */
+
       const total =
-        scored.length;
+        diversified.length;
 
       const start =
         (page - 1) * limit;
 
       const paginated =
-        scored.slice(
+        diversified.slice(
           start,
           start + limit
         );
+
+      /**
+       * ======================================================
+       * RESPONSE
+       * ======================================================
+       */
 
       return NextResponse.json({
         products:
