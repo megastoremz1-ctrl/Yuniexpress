@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSearchVariants } from "@/lib/translations/dictionary";
+import {
+  searchAndImportAliExpress,
+} from "@/lib/aliexpress/affiliate";
 
 /**
  * ============================================================
