@@ -3,307 +3,446 @@ import HomePageClient from "./HomePageClient";
 
 export const dynamic = "force-dynamic";
 
-
-function smartProductSelection(products:any[], limit=24){
-
-  const groups:any = {};
-
-  products.forEach(product=>{
-
-    const category =
-      product.category?.id || "other";
-
-    if(!groups[category]){
-      groups[category] = [];
-    }
-
-    groups[category].push(product);
-
-  });
-
-
-  const result:any[]=[];
-
-
-  while(result.length < limit){
-
-    const categories = Object.keys(groups)
-      .sort(()=>Math.random()-0.5);
-
-
-    for(const cat of categories){
-
-      const list = groups[cat];
-
-
-      if(list.length){
-
-        const index =
-          Math.floor(Math.random()*list.length);
-
-
-        const product =
-          list.splice(index,1)[0];
-
-
-        if(!result.some(p=>p.id===product.id)){
-          result.push(product);
-        }
-
-      }
-
-
-      if(result.length >= limit)
-        break;
-
-    }
-
-
-    if(result.length >= products.length)
-      break;
-
+/**
+ * ============================================================
+ * SELEÇÃO INTELIGENTE DE PRODUTOS
+ * ============================================================
+ *
+ * Objetivo:
+ *
+ * - Misturar produtos de diferentes categorias
+ * - Evitar vários produtos da mesma categoria seguidos
+ * - Dar oportunidade para categorias menores aparecerem
+ * - Evitar repetir produtos
+ * - Criar uma homepage mais parecida com marketplaces
+ */
+function smartProductSelection(
+  products: any[],
+  limit = 24
+) {
+  if (!products.length) {
+    return [];
   }
 
+  /**
+   * Agrupar produtos por categoria
+   */
+  const groups: Record<string, any[]> = {};
 
-  return result.sort(
-    ()=>Math.random()-0.5
+  for (const product of products) {
+    const categoryId =
+      product.category?.id ||
+      product.category?.slug ||
+      "other";
+
+    if (!groups[categoryId]) {
+      groups[categoryId] = [];
+    }
+
+    groups[categoryId].push(product);
+  }
+
+  /**
+   * Embaralhar produtos dentro de cada categoria
+   */
+  for (const categoryId of Object.keys(groups)) {
+    groups[categoryId] = [...groups[categoryId]].sort(
+      () => Math.random() - 0.5
+    );
+  }
+
+  /**
+   * Categorias disponíveis
+   */
+  let categories = Object.keys(groups);
+
+  /**
+   * Embaralhar categorias
+   */
+  categories = categories.sort(
+    () => Math.random() - 0.5
   );
 
+  /**
+   * Controlar posição de cada categoria
+   */
+  const indexes: Record<string, number> = {};
+
+  for (const categoryId of categories) {
+    indexes[categoryId] = 0;
+  }
+
+  const result: any[] = [];
+
+  /**
+   * ============================================================
+   * RODÍZIO ENTRE CATEGORIAS
+   * ============================================================
+   *
+   * Exemplo:
+   *
+   * Eletrônicos
+   * Casa
+   * Moda
+   * Beleza
+   * Desporto
+   * Eletrônicos
+   * Casa
+   * Moda
+   * ...
+   */
+  while (
+    result.length < limit &&
+    categories.length > 0
+  ) {
+    let addedInRound = false;
+
+    /**
+     * Alterar a ordem das categorias a cada rodada
+     * para evitar um padrão fixo.
+     */
+    categories = [...categories].sort(
+      () => Math.random() - 0.5
+    );
+
+    for (const categoryId of categories) {
+      const categoryProducts =
+        groups[categoryId];
+
+      const index =
+        indexes[categoryId] ?? 0;
+
+      /**
+       * Ainda existem produtos nessa categoria?
+       */
+      if (
+        categoryProducts &&
+        index < categoryProducts.length
+      ) {
+        const product =
+          categoryProducts[index];
+
+        indexes[categoryId] = index + 1;
+
+        /**
+         * Evitar duplicados
+         */
+        if (
+          !result.some(
+            (item) => item.id === product.id
+          )
+        ) {
+          result.push(product);
+          addedInRound = true;
+        }
+      }
+
+      if (result.length >= limit) {
+        break;
+      }
+    }
+
+    /**
+     * Evitar loop infinito
+     */
+    if (!addedInRound) {
+      break;
+    }
+
+    /**
+     * Remover categorias que já ficaram sem produtos
+     */
+    categories = categories.filter(
+      (categoryId) =>
+        indexes[categoryId] <
+        groups[categoryId].length
+    );
+  }
+
+  /**
+   * Última mistura para deixar a homepage
+   * menos previsível.
+   */
+  return result.sort(
+    () => Math.random() - 0.5
+  );
 }
 
+/**
+ * ============================================================
+ * HOME DATA
+ * ============================================================
+ */
+async function getHomeData() {
+  try {
+    /**
+     * ========================================================
+     * PRODUTOS
+     * ========================================================
+     *
+     * Buscamos um conjunto maior de produtos.
+     *
+     * Antes:
+     * take: 80
+     *
+     * Agora:
+     * take: 300
+     *
+     * Isso permite que a seleção inteligente tenha
+     * muito mais categorias para escolher.
+     */
+    const products =
+      await prisma.product.findMany({
+        where: {
+          status: "APPROVED",
+        },
 
+        take: 300,
 
-async function getHomeData(){
+        select: {
+          id: true,
+          title: true,
+          slug: true,
 
-try{
+          priceMZN: true,
+          originalPriceMZN: true,
 
+          rating: true,
+          reviewCount: true,
 
-const products =
-await prisma.product.findMany({
+          sold: true,
+          freeShipping: true,
 
-where:{
- status:"APPROVED"
-},
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
 
-take:80,
+          images: {
+            take: 1,
 
+            select: {
+              url: true,
+              alt: true,
+            },
+          },
+        },
 
-select:{
+        /**
+         * Não usamos "sold desc" aqui.
+         *
+         * Se usássemos:
+         *
+         * sold: "desc"
+         *
+         * o conjunto inicial poderia ficar
+         * muito concentrado nos mesmos tipos
+         * de produtos.
+         *
+         * Com createdAt temos produtos mais recentes
+         * disponíveis para a seleção inteligente.
+         */
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
 
-id:true,
-title:true,
-slug:true,
+    /**
+     * ========================================================
+     * BANNERS
+     * ========================================================
+     */
+    const banners =
+      await prisma.banner.findMany({
+        where: {
+          active: true,
+        },
 
-priceMZN:true,
-originalPriceMZN:true,
+        take: 5,
 
-rating:true,
-reviewCount:true,
+        orderBy: {
+          order: "asc",
+        },
 
-sold:true,
-freeShipping:true,
+        select: {
+          id: true,
+          title: true,
+          subtitle: true,
+          image: true,
+          link: true,
+        },
+      });
 
+    /**
+     * ========================================================
+     * CATEGORIAS
+     * ========================================================
+     *
+     * Mantemos as categorias em destaque
+     * para a seção de categorias da homepage.
+     */
+    const categories =
+      await prisma.category.findMany({
+        where: {
+          featured: true,
+        },
 
-category:{
- select:{
-  id:true,
-  name:true
- }
-},
+        take: 12,
 
+        orderBy: {
+          order: "asc",
+        },
 
-images:{
- take:1,
- select:{
-  url:true,
-  alt:true
- }
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          icon: true,
+          image: true,
+        },
+      });
+
+    /**
+     * ========================================================
+     * SETTINGS
+     * ========================================================
+     */
+    const settings =
+      await prisma.setting.findMany();
+
+    const settingsMap: Record<
+      string,
+      any
+    > = {};
+
+    settings.forEach((setting) => {
+      settingsMap[setting.key] =
+        setting.value;
+    });
+
+    /**
+     * ========================================================
+     * MAP PRODUCT
+     * ========================================================
+     */
+    function mapProduct(product: any) {
+      return {
+        id: product.id,
+
+        title:
+          product.title?.length > 80
+            ? product.title.substring(
+                0,
+                80
+              ) + "..."
+            : product.title,
+
+        slug: product.slug,
+
+        priceMZN:
+          product.priceMZN,
+
+        originalPriceMZN:
+          product.originalPriceMZN,
+
+        rating:
+          product.rating,
+
+        reviewCount:
+          product.reviewCount,
+
+        sold:
+          product.sold,
+
+        freeShipping:
+          product.freeShipping,
+
+        category:
+          product.category,
+
+        images:
+          product.images,
+      };
+    }
+
+    /**
+     * ========================================================
+     * PREPARAR PRODUTOS
+     * ========================================================
+     */
+    const mappedProducts =
+      products.map(mapProduct);
+
+    /**
+     * ========================================================
+     * MISTURAR CATEGORIAS
+     * ========================================================
+     *
+     * Selecionamos 24 produtos de forma inteligente.
+     */
+    const selected =
+      smartProductSelection(
+        mappedProducts,
+        24
+      );
+
+    /**
+     * ========================================================
+     * RETORNO
+     * ========================================================
+     *
+     * Mantemos exatamente a estrutura esperada
+     * pelo HomePageClient atual:
+     *
+     * featuredProducts
+     * newProducts
+     * categories
+     * banners
+     * settings
+     */
+    return {
+      banners,
+
+      featuredProducts:
+        selected.slice(0, 12),
+
+      newProducts:
+        selected.slice(12, 24),
+
+      categories,
+
+      settings: settingsMap,
+    };
+  } catch (error) {
+    console.error(
+      "Home data error:",
+      error
+    );
+
+    return {
+      banners: [],
+      featuredProducts: [],
+      newProducts: [],
+      categories: [],
+      settings: {},
+    };
+  }
 }
 
-
-},
-
-
-orderBy:{
- sold:"desc"
-}
-
-
-});
-
-
-
-const banners =
-await prisma.banner.findMany({
-
-where:{
- active:true
-},
-
-take:5,
-
-orderBy:{
- order:"asc"
-},
-
-select:{
- id:true,
- title:true,
- subtitle:true,
- image:true,
- link:true
-}
-
-});
-
-
-
-
-const categories =
-await prisma.category.findMany({
-
-where:{
- featured:true
-},
-
-take:12,
-
-orderBy:{
- order:"asc"
-},
-
-select:{
- id:true,
- name:true,
- slug:true,
- icon:true,
- image:true
-}
-
-});
-
-
-
-
-const settings =
-await prisma.setting.findMany();
-
-
-const settingsMap:any={};
-
-
-settings.forEach(s=>{
- settingsMap[s.key]=s.value;
-});
-
-
-
-function mapProduct(p:any){
-
-return {
-
-id:p.id,
-
-title:
-p.title?.length>80
-?p.title.substring(0,80)+"..."
-:p.title,
-
-
-slug:p.slug,
-
-
-priceMZN:p.priceMZN,
-originalPriceMZN:p.originalPriceMZN,
-
-
-rating:p.rating,
-reviewCount:p.reviewCount,
-
-
-sold:p.sold,
-freeShipping:p.freeShipping,
-
-
-category:p.category,
-
-
-images:p.images
-
-};
-
-
-}
-
-
-
-const mapped =
-products.map(mapProduct);
-
-
-
-const selected =
-smartProductSelection(mapped,24);
-
-
-
-return {
-
-
-banners,
-
-
-featuredProducts:selected.slice(0,12),
-
-
-newProducts:selected.slice(12,24),
-
-
-categories,
-
-
-settings:settingsMap
-
-
-};
-
-
-
-}catch(error){
-
-
-console.log(error);
-
-
-return {
-
-banners:[],
-featuredProducts:[],
-newProducts:[],
-categories:[],
-settings:{}
-
-};
-
-
-}
-
-
-}
-
-
-
-export default async function HomePage(){
-
-const data =
-await getHomeData();
-
-
-return (
-
-<HomePageClient {...data}/>
-
-);
-
-
+/**
+ * ============================================================
+ * HOME PAGE
+ * ============================================================
+ */
+export default async function HomePage() {
+  const data =
+    await getHomeData();
+
+  return (
+    <HomePageClient
+      {...data}
+    />
+  );
 }
