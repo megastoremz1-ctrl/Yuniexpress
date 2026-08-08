@@ -2,6 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSearchVariants } from "@/lib/translations/dictionary";
 
+/**
+ * ============================================================
+ * YuniExpress - Products API
+ * ============================================================
+ *
+ * Recursos:
+ *
+ * - Pesquisa inteligente
+ * - Relevância por título
+ * - Relevância por descrição
+ * - Relevância por categoria
+ * - Relevância por tags
+ * - Traduções / variantes de pesquisa
+ * - Mistura inteligente de categorias
+ * - Paginação
+ * - Filtros
+ * - Ordenação
+ *
+ * ============================================================
+ */
+
+/**
+ * ============================================================
+ * NORMALIZAÇÃO
+ * ============================================================
+ */
+
 function normalizeText(text: string = ""): string {
   return text
     .toLowerCase()
@@ -10,6 +37,12 @@ function normalizeText(text: string = ""): string {
     .trim();
 }
 
+/**
+ * ============================================================
+ * TOKENIZAÇÃO
+ * ============================================================
+ */
+
 function tokenize(text: string): string[] {
   return normalizeText(text)
     .split(/\s+/)
@@ -17,7 +50,16 @@ function tokenize(text: string): string[] {
     .filter((word) => word.length >= 2);
 }
 
-function calculateRelevance(product: any, search: string): number {
+/**
+ * ============================================================
+ * RELEVÂNCIA DA PESQUISA
+ * ============================================================
+ */
+
+function calculateRelevance(
+  product: any,
+  search: string
+): number {
   const query = normalizeText(search);
   const queryWords = tokenize(search);
 
@@ -41,15 +83,17 @@ function calculateRelevance(product: any, search: string): number {
   );
 
   const tags = Array.isArray(product.tags)
-    ? product.tags.map((t: any) => normalizeText(t.tag || ""))
+    ? product.tags.map((tag: any) =>
+        normalizeText(tag.tag || "")
+      )
     : [];
 
   let score = 0;
 
   /**
-   * ========================================
-   * CORRESPONDÊNCIA EXATA DO TÍTULO
-   * ========================================
+   * ==========================================================
+   * TÍTULO EXATO
+   * ==========================================================
    */
 
   if (title === query) {
@@ -61,9 +105,9 @@ function calculateRelevance(product: any, search: string): number {
   }
 
   /**
-   * ========================================
-   * TÍTULO CONTÉM A PESQUISA
-   * ========================================
+   * ==========================================================
+   * TÍTULO CONTÉM PESQUISA
+   * ==========================================================
    */
 
   if (title.includes(query)) {
@@ -75,9 +119,9 @@ function calculateRelevance(product: any, search: string): number {
   }
 
   /**
-   * ========================================
+   * ==========================================================
    * PALAVRAS INDIVIDUAIS
-   * ========================================
+   * ==========================================================
    */
 
   for (const word of queryWords) {
@@ -115,9 +159,9 @@ function calculateRelevance(product: any, search: string): number {
   }
 
   /**
-   * ========================================
-   * CATEGORIA
-   * ========================================
+   * ==========================================================
+   * CATEGORIA EXATA
+   * ==========================================================
    */
 
   if (categoryName === query) {
@@ -125,9 +169,9 @@ function calculateRelevance(product: any, search: string): number {
   }
 
   /**
-   * ========================================
+   * ==========================================================
    * TAG EXATA
-   * ========================================
+   * ==========================================================
    */
 
   if (
@@ -139,9 +183,9 @@ function calculateRelevance(product: any, search: string): number {
   }
 
   /**
-   * ========================================
+   * ==========================================================
    * POPULARIDADE
-   * ========================================
+   * ==========================================================
    */
 
   score += Math.min(
@@ -159,11 +203,144 @@ function calculateRelevance(product: any, search: string): number {
   return score;
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(
-      request.url
+/**
+ * ============================================================
+ * MISTURA INTELIGENTE DE CATEGORIAS
+ * ============================================================
+ *
+ * Exemplo:
+ *
+ * Categoria A
+ * Categoria B
+ * Categoria C
+ *
+ * Resultado:
+ *
+ * A1
+ * B1
+ * C1
+ * A2
+ * B2
+ * C2
+ *
+ * Isso evita que uma categoria domine toda a página.
+ */
+
+function diversifyProducts(
+  products: any[]
+): any[] {
+  if (!products.length) {
+    return [];
+  }
+
+  const groups = new Map<string, any[]>();
+
+  /**
+   * Agrupar produtos por categoria
+   */
+  for (const product of products) {
+    const categoryId =
+      product.category?.id ||
+      product.category?.slug ||
+      "uncategorized";
+
+    if (!groups.has(categoryId)) {
+      groups.set(categoryId, []);
+    }
+
+    groups.get(categoryId)!.push(product);
+  }
+
+  /**
+   * Embaralhar a ordem das categorias
+   */
+  const categories = Array.from(
+    groups.keys()
+  ).sort(() => Math.random() - 0.5);
+
+  const result: any[] = [];
+
+  /**
+   * Índice de cada categoria
+   */
+  const indexes = new Map<string, number>();
+
+  for (const category of categories) {
+    indexes.set(category, 0);
+
+    /**
+     * Embaralhar produtos dentro da categoria
+     */
+    const list = groups.get(category)!;
+
+    list.sort(
+      () => Math.random() - 0.5
     );
+  }
+
+  /**
+   * Round-robin:
+   *
+   * pega 1 produto de cada categoria
+   * antes de voltar para a primeira.
+   */
+
+  let hasProducts = true;
+
+  while (hasProducts) {
+    hasProducts = false;
+
+    /**
+     * Reembaralhar ligeiramente
+     * as categorias a cada rodada.
+     */
+    const roundCategories = [
+      ...categories,
+    ].sort(
+      () => Math.random() - 0.5
+    );
+
+    for (const category of roundCategories) {
+      const list =
+        groups.get(category) || [];
+
+      const index =
+        indexes.get(category) || 0;
+
+      if (index < list.length) {
+        result.push(list[index]);
+
+        indexes.set(
+          category,
+          index + 1
+        );
+
+        hasProducts = true;
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * ============================================================
+ * API
+ * ============================================================
+ */
+
+export async function GET(
+  request: NextRequest
+) {
+  try {
+    const { searchParams } =
+      new URL(request.url);
+
+    /**
+     * ========================================================
+     * PAGINAÇÃO
+     * ========================================================
+     */
 
     const page = Math.max(
       1,
@@ -182,11 +359,19 @@ export async function GET(request: NextRequest) {
       )
     );
 
+    /**
+     * ========================================================
+     * FILTROS
+     * ========================================================
+     */
+
     const category =
       searchParams.get("category");
 
     const search =
-      searchParams.get("search")?.trim() || "";
+      searchParams
+        .get("search")
+        ?.trim() || "";
 
     const minPrice =
       searchParams.get("minPrice");
@@ -198,18 +383,21 @@ export async function GET(request: NextRequest) {
       searchParams.get("rating");
 
     const freeShipping =
-      searchParams.get("freeShipping");
+      searchParams.get(
+        "freeShipping"
+      );
 
     const sort =
-      searchParams.get("sort") || "newest";
+      searchParams.get("sort") ||
+      "newest";
 
     const featured =
       searchParams.get("featured");
 
     /**
-     * ========================================
+     * ========================================================
      * WHERE BASE
-     * ========================================
+     * ========================================================
      */
 
     const where: any = {
@@ -217,9 +405,9 @@ export async function GET(request: NextRequest) {
     };
 
     /**
-     * ========================================
+     * ========================================================
      * CATEGORIA
-     * ========================================
+     * ========================================================
      */
 
     if (category) {
@@ -229,9 +417,9 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * ========================================
-     * PREÇO
-     * ========================================
+     * ========================================================
+     * PREÇO MÍNIMO
+     * ========================================================
      */
 
     if (minPrice) {
@@ -241,6 +429,12 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    /**
+     * ========================================================
+     * PREÇO MÁXIMO
+     * ========================================================
+     */
+
     if (maxPrice) {
       where.priceMZN = {
         ...(where.priceMZN || {}),
@@ -249,9 +443,9 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * ========================================
+     * ========================================================
      * RATING
-     * ========================================
+     * ========================================================
      */
 
     if (rating) {
@@ -261,9 +455,9 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * ========================================
+     * ========================================================
      * ENVIO GRÁTIS
-     * ========================================
+     * ========================================================
      */
 
     if (freeShipping === "true") {
@@ -271,9 +465,9 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * ========================================
-     * DESTAQUES
-     * ========================================
+     * ========================================================
+     * PRODUTOS EM DESTAQUE
+     * ========================================================
      */
 
     if (featured === "true") {
@@ -281,99 +475,187 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * ========================================
+     * ========================================================
      * PESQUISA
-     * ========================================
+     * ========================================================
      */
 
     if (search) {
       const searchVariants =
         getSearchVariants(search);
 
-      const variants = Array.from(
-        new Set([
-          search,
-          ...searchVariants,
-        ])
-      ).filter(Boolean);
+      const normalizedSearch =
+        normalizeText(search);
 
-      const searchConditions =
-        variants.flatMap((variant) => [
-          {
-            title: {
-              contains: variant,
-              mode: "insensitive",
+      const queryWords =
+        tokenize(search);
+
+      const variants =
+        Array.from(
+          new Set([
+            search,
+            normalizedSearch,
+            ...searchVariants,
+          ])
+        ).filter(Boolean);
+
+      /**
+       * Pesquisa por frases/variantes
+       */
+      const phraseConditions =
+        variants.flatMap(
+          (variant) => [
+            {
+              title: {
+                contains: variant,
+                mode: "insensitive",
+              },
             },
-          },
 
-          {
-            titleEn: {
-              contains: variant,
-              mode: "insensitive",
+            {
+              titleEn: {
+                contains: variant,
+                mode: "insensitive",
+              },
             },
-          },
 
-          {
-            description: {
-              contains: variant,
-              mode: "insensitive",
+            {
+              description: {
+                contains: variant,
+                mode: "insensitive",
+              },
             },
-          },
 
-          {
-            descriptionEn: {
-              contains: variant,
-              mode: "insensitive",
+            {
+              descriptionEn: {
+                contains: variant,
+                mode: "insensitive",
+              },
             },
-          },
 
-          {
-            tags: {
-              some: {
-                tag: {
+            {
+              tags: {
+                some: {
+                  tag: {
+                    contains: variant,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+
+            {
+              category: {
+                name: {
                   contains: variant,
                   mode: "insensitive",
                 },
               },
             },
-          },
 
-          {
-            category: {
-              name: {
-                contains: variant,
+            {
+              category: {
+                slug: {
+                  contains: variant,
+                  mode: "insensitive",
+                },
+              },
+            },
+          ]
+        );
+
+      /**
+       * Pesquisa por palavras individuais.
+       *
+       * Isso melhora casos como:
+       *
+       * "fone bluetooth"
+       *
+       * quando o título contém:
+       *
+       * "Wireless TWS Bluetooth Earbuds"
+       */
+
+      const wordConditions =
+        queryWords.flatMap(
+          (word) => [
+            {
+              title: {
+                contains: word,
                 mode: "insensitive",
               },
             },
-          },
 
-          {
-            category: {
-              slug: {
-                contains: variant,
+            {
+              titleEn: {
+                contains: word,
                 mode: "insensitive",
               },
             },
-          },
-        ]);
 
-      where.OR = searchConditions;
+            {
+              description: {
+                contains: word,
+                mode: "insensitive",
+              },
+            },
+
+            {
+              descriptionEn: {
+                contains: word,
+                mode: "insensitive",
+              },
+            },
+
+            {
+              tags: {
+                some: {
+                  tag: {
+                    contains: word,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+
+            {
+              category: {
+                name: {
+                  contains: word,
+                  mode: "insensitive",
+                },
+              },
+            },
+
+            {
+              category: {
+                slug: {
+                  contains: word,
+                  mode: "insensitive",
+                },
+              },
+            },
+          ]
+        );
+
+      where.OR = [
+        ...phraseConditions,
+        ...wordConditions,
+      ];
     }
 
     /**
-     * ========================================
+     * ========================================================
      * PESQUISA COM RELEVÂNCIA
-     * ========================================
+     * ========================================================
      */
 
     if (search) {
       /**
-       * Para pesquisa, buscamos um conjunto maior
-       * de candidatos e depois calculamos relevância.
+       * Buscar um conjunto maior de candidatos.
        *
-       * Isso evita mostrar produtos aleatórios.
+       * Depois calculamos a relevância em memória.
        */
-
       const candidates =
         await prisma.product.findMany({
           where,
@@ -407,11 +689,11 @@ export async function GET(request: NextRequest) {
       /**
        * Calcular relevância
        */
-
       const scored =
         candidates
           .map((product: any) => ({
             product,
+
             score:
               calculateRelevance(
                 product,
@@ -419,14 +701,16 @@ export async function GET(request: NextRequest) {
               ),
           }))
           .filter(
-            (item) => item.score > 0
+            (item) =>
+              item.score > 0
           )
           .sort(
             (a, b) =>
               b.score - a.score
           );
 
-      const total = scored.length;
+      const total =
+        scored.length;
 
       const start =
         (page - 1) * limit;
@@ -442,18 +726,28 @@ export async function GET(request: NextRequest) {
           paginated.map(
             ({ product }: any) => ({
               id: product.id,
-              title: product.title,
-              slug: product.slug,
+
+              title:
+                product.title,
+
+              slug:
+                product.slug,
+
               priceMZN:
                 product.priceMZN,
+
               originalPriceMZN:
                 product.originalPriceMZN,
+
               rating:
                 product.rating,
+
               reviewCount:
                 product.reviewCount,
+
               sold:
                 product.sold,
+
               freeShipping:
                 product.freeShipping,
 
@@ -474,6 +768,7 @@ export async function GET(request: NextRequest) {
           page,
           limit,
           total,
+
           totalPages:
             Math.ceil(
               total / limit
@@ -483,9 +778,9 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * ========================================
+     * ========================================================
      * ORDENAÇÃO NORMAL
-     * ========================================
+     * ========================================================
      */
 
     let orderBy: any = {
@@ -522,68 +817,253 @@ export async function GET(request: NextRequest) {
         orderBy = {
           createdAt: "desc",
         };
+        break;
     }
 
     /**
-     * ========================================
-     * PRODUTOS
-     * ========================================
+     * ========================================================
+     * TOTAL
+     * ========================================================
+     */
+
+    const total =
+      await prisma.product.count({
+        where,
+      });
+
+    /**
+     * ========================================================
+     * PRODUTOS NORMAL
+     * ========================================================
+     *
+     * IMPORTANTE:
+     *
+     * Para "newest" fazemos a mistura
+     * por categorias.
+     *
+     * Para ordenações explícitas:
+     *
+     * - preço
+     * - popular
+     * - rating
+     *
+     * respeitamos a ordenação escolhida.
+     */
+
+    const shouldDiversify =
+      sort === "newest" ||
+      !search;
+
+    if (shouldDiversify) {
+      /**
+       * Buscar candidatos suficientes
+       * para montar várias páginas.
+       *
+       * Limite máximo para não trazer
+       * a tabela inteira do banco.
+       */
+
+      const candidateLimit =
+        Math.min(
+          500,
+          Math.max(
+            limit * 8,
+            120
+          )
+        );
+
+      const candidates =
+        await prisma.product.findMany({
+          where,
+
+          include: {
+            images: {
+              orderBy: {
+                order: "asc",
+              },
+              take: 1,
+            },
+
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+
+          orderBy,
+
+          take: candidateLimit,
+        });
+
+      /**
+       * Misturar categorias
+       */
+      const diversified =
+        diversifyProducts(
+          candidates
+        );
+
+      /**
+       * Paginação depois da mistura.
+       *
+       * Isto é importante.
+       *
+       * Não fazemos:
+       *
+       * banco -> página -> shuffle
+       *
+       * Fazemos:
+       *
+       * banco -> candidatos -> mistura
+       * -> paginação
+       */
+
+      const start =
+        (page - 1) * limit;
+
+      const paginated =
+        diversified.slice(
+          start,
+          start + limit
+        );
+
+      return NextResponse.json({
+        products:
+          paginated.map(
+            (p: any) => ({
+              id: p.id,
+
+              title: p.title,
+
+              slug: p.slug,
+
+              priceMZN:
+                p.priceMZN,
+
+              originalPriceMZN:
+                p.originalPriceMZN,
+
+              rating:
+                p.rating,
+
+              reviewCount:
+                p.reviewCount,
+
+              sold:
+                p.sold,
+
+              freeShipping:
+                p.freeShipping,
+
+              category:
+                p.category,
+
+              images:
+                p.images.map(
+                  (img: any) => ({
+                    url: img.url,
+                    alt: img.alt,
+                  })
+                ),
+            })
+          ),
+
+        pagination: {
+          page,
+          limit,
+          total,
+
+          totalPages:
+            Math.ceil(
+              total / limit
+            ),
+        },
+      });
+    }
+
+    /**
+     * ========================================================
+     * ORDENAÇÃO EXPLÍCITA
+     * ========================================================
+     *
+     * Usada quando o cliente escolhe:
+     *
+     * - preço menor
+     * - preço maior
+     * - popularidade
+     * - avaliação
      */
 
     const [
       products,
-      total,
-    ] = await Promise.all([
-      prisma.product.findMany({
-        where,
+    ] =
+      await Promise.all([
+        prisma.product.findMany({
+          where,
 
-        include: {
-          images: {
-            orderBy: {
-              order: "asc",
+          include: {
+            images: {
+              orderBy: {
+                order: "asc",
+              },
+              take: 1,
             },
-            take: 1,
+
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
           },
 
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
+          orderBy,
 
-        orderBy,
+          skip:
+            (page - 1) *
+            limit,
 
-        skip:
-          (page - 1) * limit,
+          take: limit,
+        }),
+      ]);
 
-        take: limit,
-      }),
-
-      prisma.product.count({
-        where,
-      }),
-    ]);
+    /**
+     * ========================================================
+     * RESPONSE
+     * ========================================================
+     */
 
     return NextResponse.json({
       products:
         products.map(
           (p: any) => ({
             id: p.id,
-            title: p.title,
-            slug: p.slug,
+
+            title:
+              p.title,
+
+            slug:
+              p.slug,
+
             priceMZN:
               p.priceMZN,
+
             originalPriceMZN:
               p.originalPriceMZN,
+
             rating:
               p.rating,
+
             reviewCount:
               p.reviewCount,
+
             sold:
               p.sold,
+
             freeShipping:
               p.freeShipping,
 
@@ -604,13 +1084,14 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
+
         totalPages:
           Math.ceil(
             total / limit
           ),
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(
       "Products API error:",
       error
