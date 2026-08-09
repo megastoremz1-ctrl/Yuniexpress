@@ -1,90 +1,299 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
-// Upload image - stores as base64 in database (works on serverless like Vercel)
+export const dynamic = "force-dynamic";
+
+/**
+ * ============================================================
+ * CONFIGURAÇÃO
+ * ============================================================
+ */
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+];
+
+/**
+ * ============================================================
+ * UPLOAD
+ * ============================================================
+ */
+
 export async function POST(request: NextRequest) {
   try {
+    /**
+     * --------------------------------------------------------
+     * AUTENTICAÇÃO
+     * --------------------------------------------------------
+     */
+
     const session = await auth();
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Não autenticado",
+        },
+        { status: 401 }
+      );
     }
 
-    // Check admin role
+    /**
+     * --------------------------------------------------------
+     * VERIFICAR ADMIN
+     * --------------------------------------------------------
+     */
+
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-    if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
+      where: {
+        id: String(session.user.id),
+      },
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const purpose = formData.get("purpose") as string; // "logo", "banner", "product"
-
-    if (!file) {
-      return NextResponse.json({ error: "Nenhum ficheiro enviado" }, { status: 400 });
-    }
-
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Tipo de ficheiro não suportado. Use: JPG, PNG, WebP, GIF ou SVG" },
-        { status: 400 }
-      );
-    }
-
-    // Max 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "Ficheiro muito grande. Máximo: 5MB" },
-        { status: 400 }
-      );
-    }
-
-    // Convert to base64 data URL (works on serverless/Vercel)
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString("base64");
-    const dataUrl = `data:${file.type};base64,${base64}`;
-
-    // Save reference in database
-    const imageId = `img_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    
-    await prisma.setting.upsert({
-      where: { key: `upload_${imageId}` },
-      update: { value: dataUrl },
-      create: {
-        key: `upload_${imageId}`,
-        value: dataUrl,
-        type: "image",
+      select: {
+        role: true,
       },
     });
 
-    // If it's a logo, also update the store_logo setting
+    if (
+      !user ||
+      (user.role !== "ADMIN" &&
+        user.role !== "SUPER_ADMIN")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Acesso negado",
+        },
+        { status: 403 }
+      );
+    }
+
+    /**
+     * --------------------------------------------------------
+     * VERIFICAR TOKEN DO VERCEL BLOB
+     * --------------------------------------------------------
+     */
+
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error(
+        "BLOB_READ_WRITE_TOKEN não configurado"
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Armazenamento de imagens não está configurado.",
+        },
+        { status: 500 }
+      );
+    }
+
+    /**
+     * --------------------------------------------------------
+     * FORM DATA
+     * --------------------------------------------------------
+     */
+
+    const formData = await request.formData();
+
+    const file = formData.get("file");
+
+    const purpose =
+      String(
+        formData.get("purpose") || "general"
+      );
+
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Nenhum ficheiro válido foi enviado.",
+        },
+        { status: 400 }
+      );
+    }
+
+    /**
+     * --------------------------------------------------------
+     * VALIDAR TIPO
+     * --------------------------------------------------------
+     */
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Tipo de ficheiro não suportado. Use JPG, PNG, WebP, GIF ou SVG.",
+        },
+        { status: 400 }
+      );
+    }
+
+    /**
+     * --------------------------------------------------------
+     * VALIDAR TAMANHO
+     * --------------------------------------------------------
+     */
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Ficheiro muito grande. O tamanho máximo é 5MB.",
+        },
+        { status: 400 }
+      );
+    }
+
+    /**
+     * --------------------------------------------------------
+     * LIMPAR NOME DO FICHEIRO
+     * --------------------------------------------------------
+     */
+
+    const originalName =
+      file.name
+        .replace(/[^a-zA-Z0-9._-]/g, "-")
+        .toLowerCase();
+
+    const timestamp =
+      Date.now();
+
+    const random =
+      Math.random()
+        .toString(36)
+        .substring(2, 10);
+
+    /**
+     * --------------------------------------------------------
+     * ORGANIZAÇÃO DOS UPLOADS
+     * --------------------------------------------------------
+     *
+     * Exemplos:
+     *
+     * yuniexpress/logo/...
+     * yuniexpress/banner/...
+     * yuniexpress/product/...
+     */
+
+    const folder =
+      purpose === "logo"
+        ? "logo"
+        : purpose === "banner"
+        ? "banners"
+        : purpose === "product"
+        ? "products"
+        : "general";
+
+    const pathname =
+      `yuniexpress/${folder}/${timestamp}-${random}-${originalName}`;
+
+    /**
+     * --------------------------------------------------------
+     * UPLOAD PARA VERCEL BLOB
+     * --------------------------------------------------------
+     */
+
+    const blob = await put(
+      pathname,
+      file,
+      {
+        access: "public",
+        addRandomSuffix: false,
+      }
+    );
+
+    /**
+     * --------------------------------------------------------
+     * SE FOR LOGO
+     * --------------------------------------------------------
+     *
+     * Guardamos APENAS a URL no Prisma.
+     *
+     * Nunca guardamos Base64.
+     */
+
     if (purpose === "logo") {
       await prisma.setting.upsert({
-        where: { key: "store_logo" },
-        update: { value: dataUrl },
-        create: { key: "store_logo", value: dataUrl, type: "image" },
+        where: {
+          key: "store_logo",
+        },
+
+        update: {
+          value: blob.url,
+          type: "image",
+        },
+
+        create: {
+          key: "store_logo",
+          value: blob.url,
+          type: "image",
+        },
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      url: dataUrl,
-      imageId,
-      message: "Imagem carregada com sucesso",
-    });
-  } catch (error: any) {
-    console.error("Upload error:", error);
+    /**
+     * --------------------------------------------------------
+     * RESPOSTA
+     * --------------------------------------------------------
+     */
+
     return NextResponse.json(
-      { error: "Erro ao carregar imagem" },
-      { status: 500 }
+      {
+        success: true,
+
+        url: blob.url,
+
+        pathname: blob.pathname,
+
+        contentType: file.type,
+
+        size: file.size,
+
+        purpose,
+
+        message:
+          "Imagem carregada com sucesso.",
+      },
+      {
+        status: 200,
+      }
+    );
+  } catch (error: unknown) {
+    console.error(
+      "POST /api/upload error:",
+      error
+    );
+
+    let message =
+      "Erro ao carregar imagem.";
+
+    if (error instanceof Error) {
+      message = error.message;
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
