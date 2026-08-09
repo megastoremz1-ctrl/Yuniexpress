@@ -285,21 +285,33 @@ export async function POST(
         },
       }
     );
-  } catch (error) {
-    console.error(
-      "POST /api/admin/settings error:",
-      error
-    );
+  } catch (error: unknown) {
+  console.error(
+    "POST /api/admin/settings error:",
+    error
+  );
 
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Erro ao guardar configurações",
-      },
-      {
-        status: 500,
-      }
-    );
+  let message =
+    "Erro ao guardar configurações";
+
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (
+    typeof error === "string"
+  ) {
+    message = error;
   }
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+    },
+    {
+      status: 500,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }
