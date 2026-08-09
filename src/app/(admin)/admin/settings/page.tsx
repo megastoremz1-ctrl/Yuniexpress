@@ -13,7 +13,7 @@ export default function AdminSettingsPage() {
     store_tagline: "Compre Global, Pague Local",
     support_email: "suporte@yuniexpress.shop",
     support_phone: "+258 84 000 0000",
-    default_margin_percent: "25",
+    default_margin_percent: "38",
     announcement_bar: "",
     announcement_active: "false",
     homepage_title: "Compras Internacionais em Meticais",
@@ -27,38 +27,99 @@ export default function AdminSettingsPage() {
   }, []);
 
   const fetchSettings = async () => {
-    try {
-      const res = await fetch("/api/admin/settings");
-      if (res.ok) {
-        const data = await res.json();
-        setSettings((prev) => ({ ...prev, ...data.settings }));
+  try {
+    const res = await fetch(
+      "/api/admin/settings",
+      {
+        method: "GET",
+        cache: "no-store",
       }
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settings }),
-      });
-      if (res.ok) {
-        toast.success("Configurações guardadas com sucesso!");
-      } else {
-        toast.error("Erro ao guardar configurações");
-      }
-    } catch (error) {
-      toast.error("Erro ao guardar configurações");
-    } finally {
-      setSaving(false);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(
+        data.error ||
+          "Erro ao carregar configurações"
+      );
     }
-  };
+
+    if (data.settings) {
+      setSettings((prev) => ({
+        ...prev,
+        ...data.settings,
+      }));
+    }
+  } catch (error) {
+    console.error(
+      "Error fetching settings:",
+      error
+    );
+
+    toast.error(
+      "Não foi possível carregar as configurações"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+  const handleSave = async () => {
+  if (saving) return;
+
+  setSaving(true);
+
+  try {
+    const res = await fetch(
+      "/api/admin/settings",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          settings,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(
+        data.error ||
+          "Erro ao guardar configurações"
+      );
+    }
+
+    /**
+     * Atualizar o estado com os valores
+     * realmente confirmados pelo banco.
+     */
+    if (data.settings) {
+      setSettings(data.settings);
+    }
+
+    toast.success(
+      "Configurações guardadas com sucesso!"
+    );
+  } catch (error) {
+    console.error(
+      "Error saving settings:",
+      error
+    );
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Erro ao guardar configurações"
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleSyncNow = async () => {
     setSyncing(true);
