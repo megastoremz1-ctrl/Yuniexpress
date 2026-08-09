@@ -13,7 +13,7 @@ export default function AdminSettingsPage() {
     store_tagline: "Compre Global, Pague Local",
     support_email: "suporte@yuniexpress.shop",
     support_phone: "+258 84 000 0000",
-    default_margin_percent: "38",
+    default_margin_percent: "25",
     announcement_bar: "",
     announcement_active: "false",
     homepage_title: "Compras Internacionais em Meticais",
@@ -70,34 +70,53 @@ export default function AdminSettingsPage() {
   setSaving(true);
 
   try {
-    const res = await fetch(
-      "/api/admin/settings",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        cache: "no-store",
-        body: JSON.stringify({
-          settings,
-        }),
-      }
-    );
+    console.log("A guardar configurações:", settings);
 
-    const data = await res.json();
+    const res = await fetch("/api/admin/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        settings,
+      }),
+    });
 
-    if (!res.ok || !data.success) {
-      throw new Error(
-        data.error ||
-          "Erro ao guardar configurações"
-      );
+    const text = await res.text();
+
+    let data: any = {};
+
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {
+        error: text || "Resposta inválida do servidor",
+      };
     }
 
-    /**
-     * Atualizar o estado com os valores
-     * realmente confirmados pelo banco.
-     */
+    console.log("Resposta do servidor:", {
+      status: res.status,
+      data,
+    });
+
+    if (!res.ok || data.success !== true) {
+      let errorMessage = "Erro ao guardar configurações";
+
+      if (typeof data.error === "string") {
+        errorMessage = data.error;
+      } else if (data.error?.message) {
+        errorMessage = data.error.message;
+      } else if (data.message) {
+        errorMessage = data.message;
+      } else if (typeof data === "string") {
+        errorMessage = data;
+      }
+
+      throw new Error(errorMessage);
+    }
+
     if (data.settings) {
       setSettings(data.settings);
     }
@@ -105,17 +124,31 @@ export default function AdminSettingsPage() {
     toast.success(
       "Configurações guardadas com sucesso!"
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(
-      "Error saving settings:",
+      "Erro ao guardar configurações:",
       error
     );
 
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Erro ao guardar configurações"
-    );
+    let message =
+      "Erro ao guardar configurações";
+
+    if (error instanceof Error) {
+      message = error.message;
+    } else if (
+      typeof error === "string"
+    ) {
+      message = error;
+    } else if (error && typeof error === "object") {
+      try {
+        message = JSON.stringify(error);
+      } catch {
+        message =
+          "Erro desconhecido ao guardar configurações";
+      }
+    }
+
+    toast.error(message);
   } finally {
     setSaving(false);
   }
