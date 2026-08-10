@@ -55,7 +55,12 @@ async function checkAdmin() {
  * GET
  * ============================================================
  *
- * Carregar todas as configurações.
+ * Carrega as configurações da loja.
+ *
+ * IMPORTANTE:
+ * Não carregamos configurações antigas de upload_*.
+ * Isso evita que imagens Base64 gigantes sejam devolvidas
+ * ao painel administrativo.
  */
 export async function GET() {
   try {
@@ -77,18 +82,23 @@ export async function GET() {
       );
     }
 
-    const settings =
-      await prisma.setting.findMany({
-        orderBy: {
-          key: "asc",
+    const settings = await prisma.setting.findMany({
+      where: {
+        NOT: {
+          key: {
+            startsWith: "upload_",
+          },
         },
-      });
+      },
+      orderBy: {
+        key: "asc",
+      },
+    });
 
     const settingsMap: Record<string, string> = {};
 
     for (const setting of settings) {
-      settingsMap[setting.key] =
-        setting.value;
+      settingsMap[setting.key] = setting.value;
     }
 
     return NextResponse.json(
@@ -113,11 +123,13 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error:
-          "Erro ao carregar configurações",
+        error: "Erro ao carregar configurações",
       },
       {
         status: 500,
+        headers: {
+          "Cache-Control": "no-store",
+        },
       }
     );
   }
@@ -128,7 +140,14 @@ export async function GET() {
  * POST
  * ============================================================
  *
- * Guardar configurações.
+ * Guarda as configurações da loja.
+ *
+ * IMPORTANTE:
+ * Qualquer chave upload_* enviada pelo frontend é ignorada.
+ *
+ * Dessa forma, uma imagem Base64 antiga ou outra informação
+ * de upload nunca será enviada novamente para o banco através
+ * deste endpoint.
  */
 export async function POST(
   request: NextRequest
@@ -148,6 +167,11 @@ export async function POST(
       );
     }
 
+    /**
+     * ========================================================
+     * LER JSON
+     * ========================================================
+     */
     let body: unknown;
 
     try {
@@ -164,6 +188,11 @@ export async function POST(
       );
     }
 
+    /**
+     * ========================================================
+     * VALIDAR BODY
+     * ========================================================
+     */
     if (
       !body ||
       typeof body !== "object" ||
@@ -194,25 +223,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error:
-            "O campo settings é obrigatório",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    const entries = Object.entries(
-      settings as Record<string, unknown>
-    );
-
-    if (entries.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Nenhuma configuração enviada",
+          error: "O campo settings é obrigatório",
         },
         {
           status: 400,
@@ -221,8 +232,34 @@ export async function POST(
     }
 
     /**
-     * Guardar todas as configurações
-     * numa única transação.
+     * ========================================================
+     * FILTRAR CONFIGURAÇÕES
+     * ========================================================
+     *
+     * Remove upload_* para evitar Base64 gigantes.
+     */
+    const entries = Object.entries(
+      settings as Record<string, unknown>
+    ).filter(
+      ([key]) => !key.startsWith("upload_")
+    );
+
+    if (entries.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Nenhuma configuração válida enviada",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    /**
+     * ========================================================
+     * GUARDAR
+     * ========================================================
      */
     await prisma.$transaction(
       entries.map(([key, value]) =>
@@ -253,11 +290,21 @@ export async function POST(
     );
 
     /**
-     * Ler novamente do banco para confirmar
-     * exatamente o que foi guardado.
+     * ========================================================
+     * CONFIRMAR DADOS GUARDADOS
+     * ========================================================
+     *
+     * Novamente ignoramos upload_*.
      */
     const savedSettings =
       await prisma.setting.findMany({
+        where: {
+          NOT: {
+            key: {
+              startsWith: "upload_",
+            },
+          },
+        },
         orderBy: {
           key: "asc",
         },
@@ -270,6 +317,11 @@ export async function POST(
         setting.value;
     }
 
+    /**
+     * ========================================================
+     * RESPOSTA
+     * ========================================================
+     */
     return NextResponse.json(
       {
         success: true,
@@ -286,33 +338,33 @@ export async function POST(
       }
     );
   } catch (error: unknown) {
-  console.error(
-    "POST /api/admin/settings error:",
-    error
-  );
+    console.error(
+      "POST /api/admin/settings error:",
+      error
+    );
 
-  let message =
-    "Erro ao guardar configurações";
+    let message =
+      "Erro ao guardar configurações";
 
-  if (error instanceof Error) {
-    message = error.message;
-  } else if (
-    typeof error === "string"
-  ) {
-    message = error;
-  }
-
-  return NextResponse.json(
-    {
-      success: false,
-      error: message,
-    },
-    {
-      status: 500,
-      headers: {
-        "Cache-Control": "no-store",
-      },
+    if (error instanceof Error) {
+      message = error.message;
+    } else if (
+      typeof error === "string"
+    ) {
+      message = error;
     }
-  );
-}
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+      },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
 }
