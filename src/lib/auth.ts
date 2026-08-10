@@ -72,6 +72,8 @@ const providers = [
         user.password
       );
 
+ console.log("PASSWORD:", passwordValid);
+
       if (!passwordValid) {
         throw new CredentialsSignin();
       }
@@ -83,10 +85,19 @@ const providers = [
         user.role === Role.ADMIN ||
         user.role === Role.SUPER_ADMIN;
 
+<<<<<<< HEAD
+=======
+console.log("EMAIL VERIFIED:", user.emailVerified);
+console.log("ROLE:", user.role);
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       /**
        * CUSTOMER precisa confirmar email
        */
       if (!user.emailVerified && !isAdmin) {
+<<<<<<< HEAD
+=======
+        console.log("EMAIL NÃO VERIFICADO");
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
         throw new EmailNotVerifiedError();
       }
 
@@ -149,7 +160,11 @@ export const {
           email,
         },
       });
+<<<<<<< HEAD
 
+=======
+ console.log("USER:", user);
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       /**
        * Criar utilizador caso não exista
        */
@@ -322,4 +337,8 @@ export const {
 }, // fecha callbacks
 
 secret: process.env.AUTH_SECRET,
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)

@@ -23,14 +23,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  addresses     Address[]
-  orders        Order[]
-  reviews       Review[]
-  wishlist      WishlistItem[]
-  cart          CartItem[]
-  notifications Notification[]
+  accounts         Account[]
+  sessions         Session[]
+  addresses        Address[]
+  orders           Order[]
+  reviews          Review[]
+  wishlist         WishlistItem[]
+  cart             CartItem[]
+  notifications    Notification[]
+  createdCampaigns Campaign[]
 }
 
 model Account {
@@ -71,73 +72,73 @@ model VerificationToken {
 // ==================== PRODUCTS ====================
 
 model Category {
-  id          String     @id @default(cuid())
-  name        String
-  nameEn      String?
-  slug        String     @unique
-  image       String?
-  icon        String?
-  parentId    String?
-  parent      Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryChildren")
-  products    Product[]
-  featured    Boolean    @default(false)
-  order       Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id        String     @id @default(cuid())
+  name      String
+  nameEn    String?
+  slug      String     @unique
+  image     String?
+  icon      String?
+  parentId  String?
+  parent    Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryChildren")
+  products  Product[]
+  featured  Boolean    @default(false)
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Product {
-  id                String          @id @default(cuid())
-  aliexpressId      String?         @unique
-  title             String
-  titleEn           String?
-  slug              String          @unique
-  description       String?         @db.Text
-  descriptionEn     String?         @db.Text
-  categoryId        String?
-  category          Category?       @relation(fields: [categoryId], references: [id])
-  
+  id            String    @id @default(cuid())
+  aliexpressId  String?   @unique
+  title         String
+  titleEn       String?
+  slug          String    @unique
+  description   String?   @db.Text
+  descriptionEn String?   @db.Text
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+
   // Pricing
-  originalPriceUSD  Float           // Price from AliExpress in USD
-  priceUSD          Float           // Current price (may include AliExpress discount)
-  priceMZN          Float           // Final price in Meticais (after conversion + margin)
-  originalPriceMZN  Float?          // Original price in MZN (for showing discounts)
-  marginPercent     Float           @default(25)  // Profit margin percentage
-  
+  originalPriceUSD Float // Price from AliExpress in USD
+  priceUSD         Float // Current price (may include AliExpress discount)
+  priceMZN         Float // Final price in Meticais (after conversion + margin)
+  originalPriceMZN Float? // Original price in MZN (for showing discounts)
+  marginPercent    Float  @default(25) // Profit margin percentage
+
   // Stock & Status
-  stock             Int             @default(0)
-  minOrder          Int             @default(1)
-  sold              Int             @default(0)
-  status            ProductStatus   @default(PENDING)
-  featured          Boolean         @default(false)
-  
+  stock    Int           @default(0)
+  minOrder Int           @default(1)
+  sold     Int           @default(0)
+  status   ProductStatus @default(PENDING)
+  featured Boolean       @default(false)
+
   // Rating
-  rating            Float           @default(0)
-  reviewCount       Int             @default(0)
-  
+  rating      Float @default(0)
+  reviewCount Int   @default(0)
+
   // Shipping
-  shippingDays      String?         // e.g., "15-30 days"
-  freeShipping      Boolean         @default(false)
-  
+  shippingDays String? // e.g., "15-30 days"
+  freeShipping Boolean @default(false)
+
   // AliExpress data
-  aliexpressUrl     String?
-  affiliateUrl      String?
-  sellerId          String?
-  sellerName        String?
-  
+  aliexpressUrl String?
+  affiliateUrl  String?
+  sellerId      String?
+  sellerName    String?
+
   // Timestamps
-  lastSyncAt        DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  
-  images            ProductImage[]
-  variants          ProductVariant[]
-  reviews           Review[]
-  wishlistItems     WishlistItem[]
-  cartItems         CartItem[]
-  orderItems        OrderItem[]
-  tags              ProductTag[]
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  images        ProductImage[]
+  variants      ProductVariant[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  tags          ProductTag[]
 
   @@index([categoryId])
   @@index([status])
@@ -155,16 +156,16 @@ model ProductImage {
 }
 
 model ProductVariant {
-  id          String  @id @default(cuid())
-  productId   String
-  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name        String  // e.g., "Color", "Size"
-  value       String  // e.g., "Red", "XL"
-  priceUSD    Float?
-  priceMZN    Float?
-  stock       Int     @default(0)
-  image       String?
-  skuId       String?
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String // e.g., "Color", "Size"
+  value     String // e.g., "Red", "XL"
+  priceUSD  Float?
+  priceMZN  Float?
+  stock     Int     @default(0)
+  image     String?
+  skuId     String?
 }
 
 model ProductTag {
@@ -179,60 +180,60 @@ model ProductTag {
 // ==================== ORDERS ====================
 
 model Order {
-  id              String        @id @default(cuid())
-  orderNumber     String        @unique
-  userId          String
-  user            User          @relation(fields: [userId], references: [id])
-  
+  id          String @id @default(cuid())
+  orderNumber String @unique
+  userId      String
+  user        User   @relation(fields: [userId], references: [id])
+
   // Totals
-  subtotalMZN     Float
-  shippingMZN     Float         @default(0)
-  discountMZN     Float         @default(0)
-  totalMZN        Float
-  
+  subtotalMZN Float
+  shippingMZN Float @default(0)
+  discountMZN Float @default(0)
+  totalMZN    Float
+
   // Status
-  status          OrderStatus   @default(PENDING)
-  paymentStatus   PaymentStatus @default(PENDING)
-  paymentMethod   String?       // e.g., "paygo_mpesa", "paygo_emola"
-  paymentRef      String?       // PayGo transaction reference
-  
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod String? // e.g., "paygo_mpesa", "paygo_emola"
+  paymentRef    String? // PayGo transaction reference
+
   // Shipping
-  addressId       String?
-  address         Address?      @relation(fields: [addressId], references: [id])
-  trackingNumber  String?
-  trackingUrl     String?
-  shippedAt       DateTime?
-  deliveredAt     DateTime?
-  
+  addressId      String?
+  address        Address?  @relation(fields: [addressId], references: [id])
+  trackingNumber String?
+  trackingUrl    String?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+
   // AliExpress order
   aliexpressOrderId String?
-  
+
   // Coupon
-  couponId        String?
-  coupon          Coupon?       @relation(fields: [couponId], references: [id])
-  
-  notes           String?       @db.Text
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
-  items           OrderItem[]
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
 
   @@index([userId])
   @@index([status])
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  title       String
-  image       String?
-  variant     String?
-  quantity    Int
-  priceMZN    Float
-  totalMZN    Float
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  title     String
+  image     String?
+  variant   String?
+  quantity  Int
+  priceMZN  Float
+  totalMZN  Float
 }
 
 // ==================== CART & WISHLIST ====================
@@ -269,7 +270,7 @@ model Review {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  rating    Int      // 1-5
+  rating    Int // 1-5
   comment   String?  @db.Text
   images    String[] // Array of image URLs
   verified  Boolean  @default(false)
@@ -282,41 +283,41 @@ model Review {
 // ==================== ADDRESSES ====================
 
 model Address {
-  id         String  @id @default(cuid())
-  userId     String
-  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String
-  phone      String
-  province   String
-  city       String
-  district   String?
-  address    String
-  zipCode    String?
-  isDefault  Boolean @default(false)
-  
-  orders     Order[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  province  String
+  city      String
+  district  String?
+  address   String
+  zipCode   String?
+  isDefault Boolean @default(false)
+
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ==================== COUPONS ====================
 
 model Coupon {
-  id            String      @id @default(cuid())
-  code          String      @unique
-  description   String?
-  type          CouponType  @default(PERCENTAGE)
-  value         Float       // Percentage or fixed amount in MZN
-  minOrderMZN   Float?      // Minimum order value
-  maxDiscountMZN Float?     // Maximum discount cap
-  usageLimit    Int?
-  usedCount     Int         @default(0)
-  startDate     DateTime
-  endDate       DateTime
-  active        Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  
-  orders        Order[]
+  id             String     @id @default(cuid())
+  code           String     @unique
+  description    String?
+  type           CouponType @default(PERCENTAGE)
+  value          Float // Percentage or fixed amount in MZN
+  minOrderMZN    Float? // Minimum order value
+  maxDiscountMZN Float? // Maximum discount cap
+  usageLimit     Int?
+  usedCount      Int        @default(0)
+  startDate      DateTime
+  endDate        DateTime
+  active         Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+
+  orders Order[]
 }
 
 // ==================== NOTIFICATIONS ====================
@@ -327,7 +328,7 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
-  type      String   // order, promotion, system
+  type      String // order, promotion, system
   read      Boolean  @default(false)
   data      Json?
   createdAt DateTime @default(now())
@@ -343,38 +344,38 @@ model Setting {
 }
 
 model Banner {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String?
   subtitle  String?
   image     String
   link      String?
-  order     Int      @default(0)
-  active    Boolean  @default(true)
+  order     Int       @default(0)
+  active    Boolean   @default(true)
   startDate DateTime?
   endDate   DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 model ExchangeRate {
-  id        String   @id @default(cuid())
-  fromCurrency String @default("USD")
-  toCurrency   String @default("MZN")
-  rate      Float
-  source    String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  fromCurrency String   @default("USD")
+  toCurrency   String   @default("MZN")
+  rate         Float
+  source       String?
+  createdAt    DateTime @default(now())
 
   @@index([fromCurrency, toCurrency])
 }
 
 model SyncLog {
-  id          String    @id @default(cuid())
-  type        String    // products, prices, stock, shipping
-  status      String    // running, completed, failed
-  message     String?
-  itemsProcessed Int    @default(0)
-  itemsFailed    Int    @default(0)
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
+  id             String    @id @default(cuid())
+  type           String // products, prices, stock, shipping
+  status         String // running, completed, failed
+  message        String?
+  itemsProcessed Int       @default(0)
+  itemsFailed    Int       @default(0)
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
 }
 
 // ==================== MARKETING ====================
@@ -439,4 +440,32 @@ enum PaymentStatus {
 enum CouponType {
   PERCENTAGE
   FIXED
+}
+
+model Campaign {
+  id String @id @default(cuid())
+
+  title       String
+  description String
+
+  image String?
+
+  buttonText String?
+  buttonLink String?
+
+  showBanner Boolean @default(false)
+  showPopup  Boolean @default(false)
+  sendEmail  Boolean @default(true)
+  sendPush   Boolean @default(false)
+
+  active Boolean @default(true)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

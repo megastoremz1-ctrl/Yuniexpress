@@ -326,6 +326,7 @@ function diversifyProducts(
   return result;
 }
 
+<<<<<<< HEAD
 
 /**
  * ============================================================
@@ -447,6 +448,8 @@ function diversifySearchResults(
   return result;
 }
 
+=======
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
 /**
  * ============================================================
  * API
@@ -770,6 +773,7 @@ export async function GET(
 
     /**
      * ========================================================
+<<<<<<< HEAD
      * PESQUISA COM RELEVÂNCIA + MISTURA DE CATEGORIAS
      * ========================================================
      *
@@ -783,10 +787,15 @@ export async function GET(
      *
      * Assim a pesquisa continua relevante e, ao mesmo tempo,
      * evita que uma única categoria domine todos os resultados.
+=======
+     * PESQUISA COM RELEVÂNCIA
+     * ========================================================
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
      */
 
     if (search) {
       /**
+<<<<<<< HEAD
        * ======================================================
        * BUSCAR CANDIDATOS
        * ======================================================
@@ -796,6 +805,12 @@ export async function GET(
        * sozinha quais produtos serão considerados relevantes.
        */
 
+=======
+       * Buscar um conjunto maior de candidatos.
+       *
+       * Depois calculamos a relevância em memória.
+       */
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       const candidates =
         await prisma.product.findMany({
           where,
@@ -827,15 +842,24 @@ export async function GET(
         });
 
       /**
+<<<<<<< HEAD
        * ======================================================
        * CALCULAR RELEVÂNCIA
        * ======================================================
        */
 
+=======
+       * Calcular relevância
+       */
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       const scored =
         candidates
           .map((product: any) => ({
             product,
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
             score:
               calculateRelevance(
                 product,
@@ -843,13 +867,19 @@ export async function GET(
               ),
           }))
           .filter(
+<<<<<<< HEAD
             (item) => item.score > 0
+=======
+            (item) =>
+              item.score > 0
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
           )
           .sort(
             (a, b) =>
               b.score - a.score
           );
 
+<<<<<<< HEAD
       /**
        * ======================================================
        * FILTRO DE RELEVÂNCIA
@@ -1002,22 +1032,33 @@ export async function GET(
 
       const total =
         diversified.length;
+=======
+      const total =
+        scored.length;
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
 
       const start =
         (page - 1) * limit;
 
       const paginated =
+<<<<<<< HEAD
         diversified.slice(
+=======
+        scored.slice(
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
           start,
           start + limit
         );
 
+<<<<<<< HEAD
       /**
        * ======================================================
        * RESPONSE
        * ======================================================
        */
 
+=======
+>>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       return NextResponse.json({
         products:
           paginated.map(
