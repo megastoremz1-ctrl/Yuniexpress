@@ -3,42 +3,117 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "**.aliexpress-media.com" },
-      { protocol: "https", hostname: "**.alicdn.com" },
-      { protocol: "https", hostname: "**.aliexpress.com" },
-      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      // =========================================================
+      // CLOUDFLARE R2 / YUNIEXPRESS
+      // =========================================================
+      {
+        protocol: "https",
+        hostname: "assets.yuniexpress.shop",
+      },
+
+      {
+        protocol: "https",
+        hostname: "*.r2.cloudflarestorage.com",
+      },
+
+      // =========================================================
+      // ALIEXPRESS
+      // =========================================================
+      {
+        protocol: "https",
+        hostname: "**.aliexpress-media.com",
+      },
+
+      {
+        protocol: "https",
+        hostname: "**.alicdn.com",
+      },
+
+      {
+        protocol: "https",
+        hostname: "**.aliexpress.com",
+      },
+
+      // =========================================================
+      // GOOGLE
+      // =========================================================
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
     ],
   },
-  // Performance optimizations
+
+  // =========================================================
+  // PERFORMANCE
+  // =========================================================
+
   compress: true,
+
   poweredByHeader: false,
-  reactStrictMode: false, // Avoid double renders in dev
+
+  reactStrictMode: false,
+
+  // =========================================================
+  // HEADERS
+  // =========================================================
+
   headers: async () => [
     {
       source: "/sw.js",
+
       headers: [
-        { key: "Service-Worker-Allowed", value: "/" },
-        { key: "Cache-Control", value: "no-cache" },
+        {
+          key: "Service-Worker-Allowed",
+          value: "/",
+        },
+        {
+          key: "Cache-Control",
+          value: "no-cache",
+        },
       ],
     },
+
     {
       source: "/OneSignalSDKWorker.js",
+
       headers: [
-        { key: "Service-Worker-Allowed", value: "/" },
+        {
+          key: "Service-Worker-Allowed",
+          value: "/",
+        },
       ],
     },
+
+    // =======================================================
+    // CACHE DOS ÍCONES
+    // =======================================================
+
     {
-      // Cache static assets aggressively
       source: "/icons/:path*",
+
       headers: [
-        { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        {
+          key: "Cache-Control",
+          value:
+            "public, max-age=31536000, immutable",
+        },
       ],
     },
+
+    // =======================================================
+    // CACHE DE IMAGENS PNG
+    // =======================================================
+
     {
-      // Cache product images
       source: "/:path*.png",
+
       headers: [
-        { key: "Cache-Control", value: "public, max-age=86400" },
+        {
+          key: "Cache-Control",
+          value:
+            "public, max-age=86400",
+        },
       ],
     },
   ],
