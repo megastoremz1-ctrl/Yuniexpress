@@ -1,74 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
-
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * ============================================================
- * CONFIGURAÇÃO
- * ============================================================
- */
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME!;
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const R2_ENDPOINT =
+  process.env.R2_ENDPOINT ||
+  `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/svg+xml",
-];
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
-/**
- * ============================================================
- * UPLOAD
- * ============================================================
- */
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: R2_ENDPOINT,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+});
+
+async function checkAdmin() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: String(session.user.id),
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
+
+  if (
+    !user ||
+    (user.role !== "ADMIN" &&
+      user.role !== "SUPER_ADMIN")
+  ) {
+    return null;
+  }
+
+  return user;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    /**
-     * --------------------------------------------------------
-     * AUTENTICAÇÃO
-     * --------------------------------------------------------
-     */
+    const admin = await checkAdmin();
 
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Não autenticado",
-        },
-        { status: 401 }
-      );
-    }
-
-    /**
-     * --------------------------------------------------------
-     * VERIFICAR ADMIN
-     * --------------------------------------------------------
-     */
-
-    const user = await prisma.user.findUnique({
-      where: {
-        id: String(session.user.id),
-      },
-
-      select: {
-        role: true,
-      },
-    });
-
-    if (
-      !user ||
-      (user.role !== "ADMIN" &&
-        user.role !== "SUPER_ADMIN")
-    ) {
+    if (!admin) {
       return NextResponse.json(
         {
           success: false,
@@ -78,60 +68,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /**
-     * --------------------------------------------------------
-     * VERIFICAR TOKEN DO VERCEL BLOB
-     * --------------------------------------------------------
-     */
-
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.error(
-        "BLOB_READ_WRITE_TOKEN não configurado"
-      );
+    if (
+      !R2_ACCOUNT_ID ||
+      !R2_ACCESS_KEY_ID ||
+      !R2_SECRET_ACCESS_KEY ||
+      !R2_BUCKET_NAME
+    ) {
+      console.error("R2 environment variables missing");
 
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Armazenamento de imagens não está configurado.",
+          error: "Cloudflare R2 não está configurado.",
         },
         { status: 500 }
       );
     }
 
-    /**
-     * --------------------------------------------------------
-     * FORM DATA
-     * --------------------------------------------------------
-     */
-
     const formData = await request.formData();
 
     const file = formData.get("file");
-
     const purpose =
-      String(
-        formData.get("purpose") || "general"
-      );
+      String(formData.get("purpose") || "general");
 
     if (!(file instanceof File)) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Nenhum ficheiro válido foi enviado.",
+          error: "Nenhum ficheiro enviado.",
         },
         { status: 400 }
       );
     }
 
-    /**
-     * --------------------------------------------------------
-     * VALIDAR TIPO
-     * --------------------------------------------------------
-     */
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/svg+xml",
+    ];
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
           success: false,
@@ -142,91 +120,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /**
-     * --------------------------------------------------------
-     * VALIDAR TAMANHO
-     * --------------------------------------------------------
-     */
+    const maxSize = 5 * 1024 * 1024;
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > maxSize) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Ficheiro muito grande. O tamanho máximo é 5MB.",
+          error: "Ficheiro muito grande. Máximo: 5MB.",
         },
         { status: 400 }
       );
     }
 
-    /**
-     * --------------------------------------------------------
-     * LIMPAR NOME DO FICHEIRO
-     * --------------------------------------------------------
-     */
+    const extensionMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+      "image/svg+xml": "svg",
+    };
 
-    const originalName =
-      file.name
-        .replace(/[^a-zA-Z0-9._-]/g, "-")
-        .toLowerCase();
+    const extension =
+      extensionMap[file.type] || "bin";
 
-    const timestamp =
-      Date.now();
-
-    const random =
-      Math.random()
+    const randomId =
+      `${Date.now().toString(36)}-${Math.random()
         .toString(36)
-        .substring(2, 10);
+        .slice(2, 10)}`;
 
-    /**
-     * --------------------------------------------------------
-     * ORGANIZAÇÃO DOS UPLOADS
-     * --------------------------------------------------------
-     *
-     * Exemplos:
-     *
-     * yuniexpress/logo/...
-     * yuniexpress/banner/...
-     * yuniexpress/product/...
-     */
+    const safePurpose = purpose
+      .replace(/[^a-zA-Z0-9-_]/g, "")
+      .toLowerCase();
 
-    const folder =
-      purpose === "logo"
-        ? "logo"
-        : purpose === "banner"
-        ? "banners"
-        : purpose === "product"
-        ? "products"
-        : "general";
+    const key =
+      `yuniexpress/${safePurpose}/${randomId}.${extension}`;
 
-    const pathname =
-      `yuniexpress/${folder}/${timestamp}-${random}-${originalName}`;
+    const bytes = await file.arrayBuffer();
 
-    /**
-     * --------------------------------------------------------
-     * UPLOAD PARA VERCEL BLOB
-     * --------------------------------------------------------
-     */
-
-    const blob = await put(
-      pathname,
-      file,
-      {
-        access: "public",
-        addRandomSuffix: false,
-      }
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+        Body: Buffer.from(bytes),
+        ContentType: file.type,
+        CacheControl:
+          "public, max-age=31536000, immutable",
+      })
     );
 
     /**
-     * --------------------------------------------------------
-     * SE FOR LOGO
-     * --------------------------------------------------------
+     * URL pública
      *
-     * Guardamos APENAS a URL no Prisma.
-     *
-     * Nunca guardamos Base64.
+     * Exemplo:
+     * https://cdn.yuniexpress.shop/yuniexpress/logo/abc.png
      */
+    const publicUrl = R2_PUBLIC_URL
+      ? `${R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`
+      : `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${key}`;
 
+    /**
+     * Para logo, guardar somente a URL.
+     */
     if (purpose === "logo") {
       await prisma.setting.upsert({
         where: {
@@ -234,66 +188,41 @@ export async function POST(request: NextRequest) {
         },
 
         update: {
-          value: blob.url,
+          value: publicUrl,
           type: "image",
         },
 
         create: {
           key: "store_logo",
-          value: blob.url,
+          value: publicUrl,
           type: "image",
         },
       });
     }
 
-    /**
-     * --------------------------------------------------------
-     * RESPOSTA
-     * --------------------------------------------------------
-     */
-
-    return NextResponse.json(
-      {
-        success: true,
-
-        url: blob.url,
-
-        pathname: blob.pathname,
-
-        contentType: file.type,
-
-        size: file.size,
-
-        purpose,
-
-        message:
-          "Imagem carregada com sucesso.",
-      },
-      {
-        status: 200,
-      }
-    );
-  } catch (error: unknown) {
+    return NextResponse.json({
+      success: true,
+      url: publicUrl,
+      key,
+      purpose,
+      message:
+        "Imagem carregada com sucesso para o Cloudflare R2.",
+    });
+  } catch (error) {
     console.error(
-      "POST /api/upload error:",
+      "Cloudflare R2 upload error:",
       error
     );
-
-    let message =
-      "Erro ao carregar imagem.";
-
-    if (error instanceof Error) {
-      message = error.message;
-    }
 
     return NextResponse.json(
       {
         success: false,
-        error: message,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro ao carregar imagem.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
