@@ -1,17 +1,17 @@
-import { prisma } from "@/lib/db";
+﻿import { prisma } from "@/lib/db";
 import HomePageClient from "./HomePageClient";
 
 export const dynamic = "force-dynamic";
 
 /**
  * ============================================================
- * SELEÇÃO INTELIGENTE DE PRODUTOS
+ * SELEÃ‡ÃƒO INTELIGENTE DE PRODUTOS
  * ============================================================
  *
  * Objetivo:
  *
  * - Misturar produtos de diferentes categorias
- * - Evitar vários produtos da mesma categoria seguidos
+ * - Evitar vÃ¡rios produtos da mesma categoria seguidos
  * - Dar oportunidade para categorias menores aparecerem
  * - Evitar repetir produtos
  * - Criar uma homepage mais parecida com marketplaces
@@ -52,7 +52,7 @@ function smartProductSelection(
   }
 
   /**
-   * Categorias disponíveis
+   * Categorias disponÃ­veis
    */
   let categories = Object.keys(groups);
 
@@ -64,7 +64,7 @@ function smartProductSelection(
   );
 
   /**
-   * Controlar posição de cada categoria
+   * Controlar posiÃ§Ã£o de cada categoria
    */
   const indexes: Record<string, number> = {};
 
@@ -76,17 +76,17 @@ function smartProductSelection(
 
   /**
    * ============================================================
-   * RODÍZIO ENTRE CATEGORIAS
+   * RODÃZIO ENTRE CATEGORIAS
    * ============================================================
    *
    * Exemplo:
    *
-   * Eletrônicos
+   * EletrÃ´nicos
    * Casa
    * Moda
    * Beleza
    * Desporto
-   * Eletrônicos
+   * EletrÃ´nicos
    * Casa
    * Moda
    * ...
@@ -99,7 +99,7 @@ function smartProductSelection(
 
     /**
      * Alterar a ordem das categorias a cada rodada
-     * para evitar um padrão fixo.
+     * para evitar um padrÃ£o fixo.
      */
     categories = [...categories].sort(
       () => Math.random() - 0.5
@@ -150,7 +150,7 @@ function smartProductSelection(
     }
 
     /**
-     * Remover categorias que já ficaram sem produtos
+     * Remover categorias que jÃ¡ ficaram sem produtos
      */
     categories = categories.filter(
       (categoryId) =>
@@ -160,8 +160,8 @@ function smartProductSelection(
   }
 
   /**
-   * Última mistura para deixar a homepage
-   * menos previsível.
+   * Ãšltima mistura para deixar a homepage
+   * menos previsÃ­vel.
    */
   return result.sort(
     () => Math.random() - 0.5
@@ -188,7 +188,7 @@ async function getHomeData() {
      * Agora:
      * take: 300
      *
-     * Isso permite que a seleção inteligente tenha
+     * Isso permite que a seleÃ§Ã£o inteligente tenha
      * muito mais categorias para escolher.
      */
     const products =
@@ -231,9 +231,9 @@ async function getHomeData() {
         },
 
         /**
-         * Não usamos "sold desc" aqui.
+         * NÃ£o usamos "sold desc" aqui.
          *
-         * Se usássemos:
+         * Se usÃ¡ssemos:
          *
          * sold: "desc"
          *
@@ -242,7 +242,7 @@ async function getHomeData() {
          * de produtos.
          *
          * Com createdAt temos produtos mais recentes
-         * disponíveis para a seleção inteligente.
+         * disponÃ­veis para a seleÃ§Ã£o inteligente.
          */
         orderBy: {
           createdAt: "desc",
@@ -281,7 +281,7 @@ async function getHomeData() {
      * ========================================================
      *
      * Mantemos as categorias em destaque
-     * para a seção de categorias da homepage.
+     * para a seÃ§Ã£o de categorias da homepage.
      */
     const categories =
       await prisma.category.findMany({
@@ -445,8 +445,5 @@ export default async function HomePage() {
       {...data}
     />
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
+

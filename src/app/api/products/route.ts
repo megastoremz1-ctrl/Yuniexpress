@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSearchVariants } from "@/lib/translations/dictionary";
 import {
@@ -13,22 +13,22 @@ import {
  * Recursos:
  *
  * - Pesquisa inteligente
- * - Relevância por título
- * - Relevância por descrição
- * - Relevância por categoria
- * - Relevância por tags
- * - Traduções / variantes de pesquisa
+ * - RelevÃ¢ncia por tÃ­tulo
+ * - RelevÃ¢ncia por descriÃ§Ã£o
+ * - RelevÃ¢ncia por categoria
+ * - RelevÃ¢ncia por tags
+ * - TraduÃ§Ãµes / variantes de pesquisa
  * - Mistura inteligente de categorias
- * - Paginação
+ * - PaginaÃ§Ã£o
  * - Filtros
- * - Ordenação
+ * - OrdenaÃ§Ã£o
  *
  * ============================================================
  */
 
 /**
  * ============================================================
- * NORMALIZAÇÃO
+ * NORMALIZAÃ‡ÃƒO
  * ============================================================
  */
 
@@ -42,7 +42,7 @@ function normalizeText(text: string = ""): string {
 
 /**
  * ============================================================
- * TOKENIZAÇÃO
+ * TOKENIZAÃ‡ÃƒO
  * ============================================================
  */
 
@@ -55,7 +55,7 @@ function tokenize(text: string): string[] {
 
 /**
  * ============================================================
- * RELEVÂNCIA DA PESQUISA
+ * RELEVÃ‚NCIA DA PESQUISA
  * ============================================================
  */
 
@@ -95,7 +95,7 @@ function calculateRelevance(
 
   /**
    * ==========================================================
-   * TÍTULO EXATO
+   * TÃTULO EXATO
    * ==========================================================
    */
 
@@ -109,7 +109,7 @@ function calculateRelevance(
 
   /**
    * ==========================================================
-   * TÍTULO CONTÉM PESQUISA
+   * TÃTULO CONTÃ‰M PESQUISA
    * ==========================================================
    */
 
@@ -226,7 +226,7 @@ function calculateRelevance(
  * B2
  * C2
  *
- * Isso evita que uma categoria domine toda a página.
+ * Isso evita que uma categoria domine toda a pÃ¡gina.
  */
 
 function diversifyProducts(
@@ -264,7 +264,7 @@ function diversifyProducts(
   const result: any[] = [];
 
   /**
-   * Índice de cada categoria
+   * Ãndice de cada categoria
    */
   const indexes = new Map<string, number>();
 
@@ -326,19 +326,17 @@ function diversifyProducts(
   return result;
 }
 
-<<<<<<< HEAD
-
 /**
  * ============================================================
  * MISTURA DE RESULTADOS DE PESQUISA
  * ============================================================
  *
- * A relevância é calculada primeiro.
- * Só depois misturamos as categorias.
+ * A relevÃ¢ncia Ã© calculada primeiro.
+ * SÃ³ depois misturamos as categorias.
  *
- * Isto evita colocar produtos aleatórios na pesquisa.
- * A pesquisa continua sendo relevante, mas não deixa
- * uma única categoria ocupar todos os primeiros lugares.
+ * Isto evita colocar produtos aleatÃ³rios na pesquisa.
+ * A pesquisa continua sendo relevante, mas nÃ£o deixa
+ * uma Ãºnica categoria ocupar todos os primeiros lugares.
  */
 function diversifySearchResults(
   scoredProducts: {
@@ -387,8 +385,8 @@ function diversifySearchResults(
   }
 
   /**
-   * A categoria cujo melhor produto tem maior relevância
-   * começa primeiro.
+   * A categoria cujo melhor produto tem maior relevÃ¢ncia
+   * comeÃ§a primeiro.
    */
   const categories = Array.from(
     groups.keys()
@@ -448,8 +446,6 @@ function diversifySearchResults(
   return result;
 }
 
-=======
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
 /**
  * ============================================================
  * API
@@ -465,7 +461,7 @@ export async function GET(
 
     /**
      * ========================================================
-     * PAGINAÇÃO
+     * PAGINAÃ‡ÃƒO
      * ========================================================
      */
 
@@ -545,7 +541,7 @@ export async function GET(
 
     /**
      * ========================================================
-     * PREÇO MÍNIMO
+     * PREÃ‡O MÃNIMO
      * ========================================================
      */
 
@@ -558,7 +554,7 @@ export async function GET(
 
     /**
      * ========================================================
-     * PREÇO MÁXIMO
+     * PREÃ‡O MÃXIMO
      * ========================================================
      */
 
@@ -583,7 +579,7 @@ export async function GET(
 
     /**
      * ========================================================
-     * ENVIO GRÁTIS
+     * ENVIO GRÃTIS
      * ========================================================
      */
 
@@ -698,7 +694,7 @@ export async function GET(
        *
        * "fone bluetooth"
        *
-       * quando o título contém:
+       * quando o tÃ­tulo contÃ©m:
        *
        * "Wireless TWS Bluetooth Earbuds"
        */
@@ -773,44 +769,38 @@ export async function GET(
 
     /**
      * ========================================================
-<<<<<<< HEAD
-     * PESQUISA COM RELEVÂNCIA + MISTURA DE CATEGORIAS
+     * PESQUISA COM RELEVÃ‚NCIA + MISTURA DE CATEGORIAS
      * ========================================================
      *
      * Fluxo:
      *
      * 1. Encontrar candidatos no banco
-     * 2. Calcular relevância
+     * 2. Calcular relevÃ¢ncia
      * 3. Eliminar resultados muito fracos
      * 4. Misturar categorias
      * 5. Paginar somente depois da mistura
      *
      * Assim a pesquisa continua relevante e, ao mesmo tempo,
-     * evita que uma única categoria domine todos os resultados.
-=======
-     * PESQUISA COM RELEVÂNCIA
+     * evita que uma Ãºnica categoria domine todos os resultados.
+     * PESQUISA COM RELEVÃ‚NCIA
      * ========================================================
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
      */
 
     if (search) {
       /**
-<<<<<<< HEAD
        * ======================================================
        * BUSCAR CANDIDATOS
        * ======================================================
        *
-       * Procuramos até 500 candidatos antes de paginar.
-       * Isso é importante porque a página 1 não deve decidir
-       * sozinha quais produtos serão considerados relevantes.
+       * Procuramos atÃ© 500 candidatos antes de paginar.
+       * Isso Ã© importante porque a pÃ¡gina 1 nÃ£o deve decidir
+       * sozinha quais produtos serÃ£o considerados relevantes.
        */
 
-=======
-       * Buscar um conjunto maior de candidatos.
+       /** Buscar um conjunto maior de candidatos.
        *
-       * Depois calculamos a relevância em memória.
+       * Depois calculamos a relevÃ¢ncia em memÃ³ria.
        */
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       const candidates =
         await prisma.product.findMany({
           where,
@@ -842,24 +832,17 @@ export async function GET(
         });
 
       /**
-<<<<<<< HEAD
        * ======================================================
-       * CALCULAR RELEVÂNCIA
+       * CALCULAR RELEVÃ‚NCIA
        * ======================================================
        */
 
-=======
-       * Calcular relevância
+       /**Calcular relevÃ¢ncia
        */
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       const scored =
         candidates
           .map((product: any) => ({
             product,
-<<<<<<< HEAD
-=======
-
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
             score:
               calculateRelevance(
                 product,
@@ -867,26 +850,20 @@ export async function GET(
               ),
           }))
           .filter(
-<<<<<<< HEAD
             (item) => item.score > 0
-=======
-            (item) =>
-              item.score > 0
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
           )
           .sort(
             (a, b) =>
               b.score - a.score
           );
 
-<<<<<<< HEAD
       /**
        * ======================================================
-       * FILTRO DE RELEVÂNCIA
+       * FILTRO DE RELEVÃ‚NCIA
        * ======================================================
        *
-       * Para pesquisas com várias palavras, damos prioridade
-       * a produtos cuja correspondência aparece no título,
+       * Para pesquisas com vÃ¡rias palavras, damos prioridade
+       * a produtos cuja correspondÃªncia aparece no tÃ­tulo,
        * categoria ou tags.
        *
        * Exemplo:
@@ -899,8 +876,8 @@ export async function GET(
        * - Capa iPhone 15
        * - Cabo para iPhone 15
        *
-       * e não simplesmente qualquer produto que tenha uma
-       * ocorrência fraca no texto.
+       * e nÃ£o simplesmente qualquer produto que tenha uma
+       * ocorrÃªncia fraca no texto.
        */
 
       const queryWords =
@@ -940,7 +917,7 @@ export async function GET(
                 : [];
 
             /**
-             * Pesquisa com várias palavras.
+             * Pesquisa com vÃ¡rias palavras.
              */
             if (queryWords.length > 1) {
               const titleMatch =
@@ -967,7 +944,7 @@ export async function GET(
                 );
 
               /**
-               * Correspondência forte.
+               * CorrespondÃªncia forte.
                */
               if (
                 titleMatch ||
@@ -978,15 +955,15 @@ export async function GET(
               }
 
               /**
-               * Fallback para produtos cuja relevância
-               * veio de uma descrição muito boa.
+               * Fallback para produtos cuja relevÃ¢ncia
+               * veio de uma descriÃ§Ã£o muito boa.
                */
               return score >= 150;
             }
 
             /**
-             * Pesquisa de uma única palavra.
-             * Mantemos mais flexível.
+             * Pesquisa de uma Ãºnica palavra.
+             * Mantemos mais flexÃ­vel.
              */
             return true;
           }
@@ -998,9 +975,9 @@ export async function GET(
        * ======================================================
        *
        * Se o filtro ficou vazio, usamos os resultados
-       * relevantes originais. Isso evita mostrar uma página
-       * vazia quando a pesquisa é válida mas o produto só
-       * corresponde pela descrição.
+       * relevantes originais. Isso evita mostrar uma pÃ¡gina
+       * vazia quando a pesquisa Ã© vÃ¡lida mas o produto sÃ³
+       * corresponde pela descriÃ§Ã£o.
        */
 
       const searchResults =
@@ -1013,52 +990,41 @@ export async function GET(
        * MISTURAR CATEGORIAS
        * ======================================================
        *
-       * A relevância já foi calculada acima.
-       * Aqui apenas distribuímos os resultados entre categorias.
+       * A relevÃ¢ncia jÃ¡ foi calculada acima.
+       * Aqui apenas distribuÃ­mos os resultados entre categorias.
        */
 
-      const diversified =
-        diversifySearchResults(
-          searchResults
-        );
+        const diversified =
+    diversifySearchResults(
+      searchResults
+    );
 
-      /**
-       * ======================================================
-       * PAGINAÇÃO
-       * ======================================================
-       *
-       * A paginação acontece DEPOIS da mistura.
-       */
+  /**
+   * ======================================================
+   * PAGINAÇÃO
+   * ======================================================
+   *
+   * A paginação acontece DEPOIS da mistura.
+   */
 
-      const total =
-        diversified.length;
-=======
-      const total =
-        scored.length;
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
+  const total =
+    diversified.length;
 
-      const start =
-        (page - 1) * limit;
+  const start =
+    (page - 1) * limit;
 
-      const paginated =
-<<<<<<< HEAD
-        diversified.slice(
-=======
-        scored.slice(
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
-          start,
-          start + limit
-        );
+  const paginated =
+    diversified.slice(
+      start,
+      start + limit
+    );
 
-<<<<<<< HEAD
-      /**
-       * ======================================================
-       * RESPONSE
-       * ======================================================
-       */
+  /**
+   * ======================================================
+   * RESPONSE
+   * ======================================================
+   */
 
-=======
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       return NextResponse.json({
         products:
           paginated.map(
@@ -1117,7 +1083,7 @@ export async function GET(
 
     /**
      * ========================================================
-     * ORDENAÇÃO NORMAL
+     * ORDENAÃ‡ÃƒO NORMAL
      * ========================================================
      */
 
@@ -1179,13 +1145,13 @@ export async function GET(
      * Para "newest" fazemos a mistura
      * por categorias.
      *
-     * Para ordenações explícitas:
+     * Para ordenaÃ§Ãµes explÃ­citas:
      *
-     * - preço
+     * - preÃ§o
      * - popular
      * - rating
      *
-     * respeitamos a ordenação escolhida.
+     * respeitamos a ordenaÃ§Ã£o escolhida.
      */
 
     const shouldDiversify =
@@ -1195,9 +1161,9 @@ export async function GET(
     if (shouldDiversify) {
       /**
        * Buscar candidatos suficientes
-       * para montar várias páginas.
+       * para montar vÃ¡rias pÃ¡ginas.
        *
-       * Limite máximo para não trazer
+       * Limite mÃ¡ximo para nÃ£o trazer
        * a tabela inteira do banco.
        */
 
@@ -1245,18 +1211,18 @@ export async function GET(
         );
 
       /**
-       * Paginação depois da mistura.
+       * PaginaÃ§Ã£o depois da mistura.
        *
-       * Isto é importante.
+       * Isto Ã© importante.
        *
-       * Não fazemos:
+       * NÃ£o fazemos:
        *
-       * banco -> página -> shuffle
+       * banco -> pÃ¡gina -> shuffle
        *
        * Fazemos:
        *
        * banco -> candidatos -> mistura
-       * -> paginação
+       * -> paginaÃ§Ã£o
        */
 
       const start =
@@ -1324,15 +1290,15 @@ export async function GET(
 
     /**
      * ========================================================
-     * ORDENAÇÃO EXPLÍCITA
+     * ORDENAÃ‡ÃƒO EXPLÃCITA
      * ========================================================
      *
      * Usada quando o cliente escolhe:
      *
-     * - preço menor
-     * - preço maior
+     * - preÃ§o menor
+     * - preÃ§o maior
      * - popularidade
-     * - avaliação
+     * - avaliaÃ§Ã£o
      */
 
     const [

@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin } from "next-auth";
+﻿import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
@@ -7,7 +7,7 @@ import { Role } from "@prisma/client";
 import { prisma } from "./db";
 
 /**
- * Erro personalizado para email não verificado.
+ * Erro personalizado para email nÃ£o verificado.
  */
 class EmailNotVerifiedError extends CredentialsSignin {
   constructor() {
@@ -58,7 +58,7 @@ const providers = [
       });
 
       /**
-       * Utilizador não existe
+       * Utilizador nÃ£o existe
        */
       if (!user || !user.password) {
         throw new CredentialsSignin();
@@ -85,19 +85,13 @@ const providers = [
         user.role === Role.ADMIN ||
         user.role === Role.SUPER_ADMIN;
 
-<<<<<<< HEAD
-=======
 console.log("EMAIL VERIFIED:", user.emailVerified);
 console.log("ROLE:", user.role);
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       /**
        * CUSTOMER precisa confirmar email
        */
       if (!user.emailVerified && !isAdmin) {
-<<<<<<< HEAD
-=======
-        console.log("EMAIL NÃO VERIFICADO");
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
+        console.log("EMAIL NÃƒO VERIFICADO");
         throw new EmailNotVerifiedError();
       }
 
@@ -160,13 +154,9 @@ export const {
           email,
         },
       });
-<<<<<<< HEAD
-
-=======
  console.log("USER:", user);
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
       /**
-       * Criar utilizador caso não exista
+       * Criar utilizador caso nÃ£o exista
        */
       if (!existingUser) {
 
@@ -184,7 +174,7 @@ export const {
               user.image ?? null,
 
             /**
-             * O Google já confirmou o email.
+             * O Google jÃ¡ confirmou o email.
              */
             emailVerified: new Date(),
 
@@ -251,7 +241,7 @@ export const {
      * LOGIN COM CREDENTIALS
      * =========================================
      *
-     * Toda a validação já foi feita no authorize().
+     * Toda a validaÃ§Ã£o jÃ¡ foi feita no authorize().
      */
     if (account?.provider === "credentials") {
       return true;
@@ -337,8 +327,5 @@ export const {
 }, // fecha callbacks
 
 secret: process.env.AUTH_SECRET,
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 7fbe44c (fix: add cloudflare r2 sdk)
+
