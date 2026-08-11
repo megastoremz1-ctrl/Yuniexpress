@@ -61,3 +61,7 @@ skills-lock.json
 # PWA generated files
 /public/sw.js
 /public/workbox-*.js
+.env*.local
+
+# Vercel environment files
+.vercel*.local
